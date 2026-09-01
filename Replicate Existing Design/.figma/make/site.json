@@ -1,0 +1,10 @@
+{
+  "description": "Delivers an exact digital replica of provided designs, enabling users to visualize and interact with precise web app prototypes for seamless development.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
