@@ -166,6 +166,7 @@ class ChatService:
                                 "model": event.get("model"),
                                 "verified": event.get("verified", verified),
                                 "analysis": event.get("analysis"),
+                                "calculations": event.get("calculations", []),
                             },
                         )
                     except Exception as msg_err:

@@ -1,45 +1,28 @@
 # Python
-venv/
-.venv/
 __pycache__/
 *.py[cod]
+*.pyo
 
-# Environment / secrets
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment variables
 .env
-.env.*
-!.env.example
 
 # Node
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
 
-# Build files
+# Build
 dist/
 build/
-.next/
 
 # IDE
-
 .vscode/
 .idea/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-
-# Python cache
-.pytest_cache/
-.mypy_cache/
-
-# Database
-*.sqlite
-*.sqlite3
-
-# Temporary files
-tmp/
-temp/

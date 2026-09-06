@@ -413,3 +413,22 @@ class ModelRegistry(Base):
     last_checked = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CalculationRecord(Base):
+    __tablename__ = "calculation_records"
+    id = Column(Integer, primary_key=True, index=True)
+    calculation_id = Column(String(100), unique=True, index=True, nullable=False)
+    trace_id = Column(String(100), unique=True, index=True, nullable=False)
+    company_id = Column(String(100), ForeignKey("companies.company_id"), nullable=False, index=True)
+    operation = Column(String(100), nullable=False, index=True)
+    inputs = Column(SQLiteJSON, default=dict)
+    context = Column(SQLiteJSON, default=dict)
+    result = Column(SQLiteJSON, nullable=True)
+    unit = Column(String(100), nullable=True)
+    formula = Column(Text, nullable=True)
+    rule = Column(SQLiteJSON, nullable=True)
+    status = Column(String(50), nullable=False)
+    verification_status = Column(String(50), nullable=False)
+    trace = Column(SQLiteJSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)

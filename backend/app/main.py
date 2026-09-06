@@ -7,6 +7,8 @@ from app.core.logging import configure_logging, get_logger
 from app.core.exceptions import WorkbenchException
 from app.db.database import init_db
 from app.api.routes import health, models, knowledge, chat, documents, assets, projects, tasks, artifacts, approvals, work_orders, security, document_generation, auth, code
+from app.api.routes.calculations import router as calculation_router
+
 
 logger = get_logger(__name__)
 
@@ -66,6 +68,7 @@ app.include_router(work_orders.router, prefix="/api")
 app.include_router(security.router, prefix="/api")
 app.include_router(document_generation.router, prefix="/api")
 app.include_router(code.router, prefix="/api")
+app.include_router(calculation_router, prefix="/api")
 
 if settings.app_env == "development":
     @app.get("/")

@@ -31,6 +31,16 @@ interface RecItem {
   rationale?: string;
 }
 
+interface CalculationItem {
+  calculation_id?: string;
+  trace_id?: string;
+  operation?: string;
+  result?: unknown;
+  unit?: string | null;
+  formula?: string | null;
+  verification_status?: string;
+}
+
 export interface AnalysisEnvelope {
   summary?: string;
   findings?: FindingItem[];
@@ -38,6 +48,7 @@ export interface AnalysisEnvelope {
   charts?: ChartData[];
   tables?: TableData[];
   recommendations?: RecItem[];
+  calculations?: CalculationItem[];
 }
 
 function statusColor(status?: string) {
@@ -123,8 +134,9 @@ export default function AnalysisView({ analysis }: { analysis: AnalysisEnvelope 
   const charts = analysis.charts || [];
   const tables = analysis.tables || [];
   const recommendations = analysis.recommendations || [];
+  const calculations = analysis.calculations || [];
 
-  if (!analysis.summary && findings.length === 0 && metrics.length === 0) return null;
+  if (!analysis.summary && findings.length === 0 && metrics.length === 0 && calculations.length === 0) return null;
 
   return (
     <div className="mt-3 rounded-[10px] border border-[#253248] bg-[#0F1726] overflow-hidden animate-fade-up">
@@ -151,6 +163,30 @@ export default function AnalysisView({ analysis }: { analysis: AnalysisEnvelope 
                 </span>
               </div>
             ))}
+          </div>
+        )}
+
+        {calculations.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#667386] mb-2">Deterministic Calculations</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {calculations.map((calculation, index) => (
+                <div key={calculation.calculation_id || index} className="rounded-[8px] bg-[#141E2F] border border-[#253248] px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-[#667386] uppercase">{calculation.operation || "calculation"}</p>
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${statusColor(calculation.verification_status === "VERIFIED" ? "NORMAL" : "WARNING")}`}>
+                      {calculation.verification_status || "PENDING"}
+                    </span>
+                  </div>
+                  <p className="text-[18px] font-semibold text-[#F5F7FA] mt-1">
+                    {typeof calculation.result === "object" ? JSON.stringify(calculation.result) : String(calculation.result ?? "-")}
+                    {calculation.unit ? <span className="text-[10px] text-[#667386] ml-1">{calculation.unit}</span> : null}
+                  </p>
+                  {calculation.formula && <p className="text-[10px] text-[#9AA6B5] mt-1 font-mono">{calculation.formula}</p>}
+                  {calculation.trace_id && <p className="text-[9px] text-[#667386] mt-1 font-mono">Trace {calculation.trace_id}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

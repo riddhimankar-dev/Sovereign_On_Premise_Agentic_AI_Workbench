@@ -773,7 +773,7 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
         artifacts: (m.artifacts || []) as ChatArtifact[],
         model: m.meta?.model || undefined,
         verified: m.meta?.verified !== undefined ? m.meta!.verified : null,
-        analysis: m.meta?.analysis || undefined,
+        analysis: m.meta?.analysis || (m.meta?.calculations?.length ? { calculations: m.meta.calculations } : undefined),
       })));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load conversation");
@@ -827,7 +827,7 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
               artifactLinks.push(a);
             }
           }
-          const analysis = ev.analysis || undefined;
+          const analysis = ev.analysis || (ev.calculations?.length ? { calculations: ev.calculations } : undefined);
           if (ev.answer) {
             setMessages((prev) => [...prev, {
               role: "assistant",

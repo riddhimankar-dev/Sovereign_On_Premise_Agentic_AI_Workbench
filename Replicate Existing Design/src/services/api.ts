@@ -99,6 +99,7 @@ export interface ChatMessageMeta {
   model?: string | null;
   verified?: boolean | null;
   analysis?: any;
+  calculations?: CalculationResult[];
 }
 
 export interface MessageRecord {
@@ -182,6 +183,7 @@ export interface ChatEvent {
   tools_used?: string[];
   documents_accessed?: string[];
   analysis?: any;
+  calculations?: CalculationResult[];
   artifact?: any;
   artifacts?: Array<{
     artifact_id: string;
@@ -421,6 +423,25 @@ export interface GenerateDocumentResponse {
   download_url: string;
 }
 
+export interface CalculationRequest {
+  operation: string;
+  inputs?: Record<string, { value: number; unit?: string; source?: string; source_ref?: string }>;
+  dataset?: Array<Record<string, unknown>>;
+  context?: Record<string, unknown>;
+}
+
+export interface CalculationResult {
+  calculation_id: string;
+  trace_id: string;
+  operation: string;
+  result: unknown;
+  unit?: string | null;
+  formula?: string | null;
+  status: string;
+  verification_status: string;
+  trace?: Record<string, unknown>;
+}
+
 export const api = {
   health: {
     check: () => fetchJson<HealthResponse>("/api/health"),
@@ -459,6 +480,13 @@ export const api = {
   knowledge: {
     search: (request: KnowledgeSearchRequest) => fetchJson<KnowledgeSearchResponse>("/api/knowledge/search", { method: "POST", body: JSON.stringify(request) }),
     health: () => fetchJson<{ status: string; service: string }>("/api/knowledge/health"),
+  },
+
+  calculations: {
+    execute: (request: CalculationRequest) => fetchJson<CalculationResult>("/api/calculations/execute", { method: "POST", body: JSON.stringify(request) }),
+    list: (limit = 50) => fetchJson<{ calculations: CalculationResult[]; total: number }>(`/api/calculations?limit=${limit}`),
+    get: (calculationId: string) => fetchJson<CalculationResult>(`/api/calculations/${calculationId}`),
+    trace: (calculationId: string) => fetchJson<Record<string, unknown>>(`/api/calculations/${calculationId}/trace`),
   },
 
   documents: {

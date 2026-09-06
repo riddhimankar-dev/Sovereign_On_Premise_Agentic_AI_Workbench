@@ -48,7 +48,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     try:
         import httpx
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{settings.qdrant_url}/health")
+            resp = await client.get(f"{settings.qdrant_url}/healthz")
             checks["qdrant"] = resp.status_code == 200
     except Exception as e:
         logger.error("qdrant_health_check_failed", error=str(e))
