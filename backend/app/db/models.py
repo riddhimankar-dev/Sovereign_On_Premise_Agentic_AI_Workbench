@@ -60,6 +60,9 @@ class ArtifactType(PyEnum):
     PDF = "PDF"
     PY = "PY"
     JSON = "JSON"
+    CSV = "CSV"
+    TXT = "TXT"
+    MD = "MD"
     OTHER = "OTHER"
 
 
@@ -318,6 +321,10 @@ class Message(Base):
     role = Column(String(20), nullable=False)
     content = Column(Text, nullable=False)
     run_id = Column(String(100), nullable=True)
+    sources = Column(SQLiteJSON, default=list)
+    artifacts = Column(SQLiteJSON, default=list)
+    meta = Column(SQLiteJSON, default=dict)
+    attachments = Column(SQLiteJSON, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")
@@ -338,6 +345,8 @@ class Artifact(Base):
     agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
     sources = Column(SQLiteJSON, default=list)
     ai_provenance = Column(SQLiteJSON, default=dict)
+    version = Column(Integer, default=1, nullable=False)
+    parent_artifact_id = Column(String(100), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

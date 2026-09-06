@@ -53,7 +53,9 @@ class AgentState(BaseModel):
     artifacts_generated: List[str] = []
     evidence: List[Dict[str, Any]] = []
     final_answer: Optional[str] = None
+    analysis: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    context: Dict[str, Any] = {}
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

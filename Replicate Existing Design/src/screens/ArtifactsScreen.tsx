@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { FileText, FileSpreadsheet, Package, Eye, ExternalLink, Download, ChevronRight, AlertTriangle } from "lucide-react";
+import { FileText, FileSpreadsheet, Package, Eye, Download, ChevronRight, AlertTriangle, X, Layers } from "lucide-react";
 import { api, Artifact } from "../services/api";
 
 const tabs = ["All", "Documents", "Spreadsheets", "Presentations", "Code", "Reports"];
 
 function tabFor(type: string): string {
   const t = (type || "").toLowerCase();
-  if (t.includes("sheet") || t.includes("xl")) return "Spreadsheets";
+  if (t.includes("sheet") || t.includes("xl") || t.includes("csv")) return "Spreadsheets";
   if (t.includes("present") || t.includes("ppt")) return "Presentations";
   if (t.includes("report")) return "Reports";
   if (t.includes("code") || t.includes("py") || t.includes("script")) return "Code";
@@ -15,14 +15,89 @@ function tabFor(type: string): string {
 
 function iconFor(type: string) {
   const t = (type || "").toLowerCase();
-  if (t.includes("sheet") || t.includes("xl")) return FileSpreadsheet;
+  if (t.includes("sheet") || t.includes("xl") || t.includes("csv")) return FileSpreadsheet;
   if (t.includes("code") || t.includes("py")) return Package;
   return FileText;
 }
 
-function extFor(name: string): string {
+function extFor(name: string, type: string): string {
   const idx = name.lastIndexOf(".");
-  return idx >= 0 ? name.slice(idx + 1).toUpperCase() : "DOC";
+  if (idx >= 0) return name.slice(idx + 1).toUpperCase();
+  return (type || "DOC").toUpperCase();
+}
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "Other";
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const then = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round((today.getTime() - then.getTime()) / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return d.toLocaleDateString([], { weekday: "long" });
+  return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+}
+
+function PreviewModal({ artifact, onClose }: { artifact: Artifact; onClose: () => void }) {
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(null);
+    api.artifacts.preview(artifact.artifact_id)
+      .then((p) => { if (active) setContent(p.content || p.raw || ""); })
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Preview failed"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [artifact.artifact_id]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-xl bg-[#0F1726] border border-[#253248] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex-none flex items-center gap-3 px-5 py-3.5 border-b border-[#253248]">
+          <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/15 flex items-center justify-center flex-none">
+            <FileText size={14} className="text-[#8B5CF6]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13.5px] font-semibold text-[#F5F7FA] truncate">{artifact.name}</p>
+            <p className="text-[10.5px] text-[#667386]">{artifact.artifact_type} · v{artifact.version}{artifact.parent_artifact_id ? " · versioned" : ""}</p>
+          </div>
+          <a
+            href={api.artifacts.downloadUrl(artifact.artifact_id)}
+            className="flex-none h-8 px-3 rounded-md text-[11.5px] font-medium text-[#8B5CF6] border border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/10 transition-all flex items-center gap-1.5"
+          >
+            <Download size={12} /> Download
+          </a>
+          <button onClick={onClose} className="w-8 h-8 rounded-md flex items-center justify-center text-[#667386] hover:text-[#F5F7FA] hover:bg-[#141E2F] transition-all">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-5">
+          {loading ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-3 w-2/3 bg-[#253248] rounded" />
+              <div className="h-3 w-1/2 bg-[#1a2740] rounded" />
+              <div className="h-3 w-3/4 bg-[#253248] rounded" />
+            </div>
+          ) : error ? (
+            <div className="rounded-lg bg-[#7F1D1D]/15 border border-[#7F1D1D]/40 px-4 py-3 flex items-start gap-2.5">
+              <AlertTriangle size={14} className="text-[#FCA5A5] flex-none mt-0.5" />
+              <p className="text-[12.5px] text-[#FCA5A5]">{error}</p>
+            </div>
+          ) : (
+            <pre className="text-[12.5px] text-[#D7DEE8] leading-relaxed whitespace-pre-wrap font-mono">
+              {content || "(No previewable content — download to view.)"}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ArtifactsScreen() {
@@ -30,6 +105,7 @@ export default function ArtifactsScreen() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Artifact | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +134,17 @@ export default function ArtifactsScreen() {
   };
 
   const filtered = activeTab === "All" ? artifacts : artifacts.filter(a => tabFor(a.artifact_type) === activeTab);
+
+  const groups: { label: string; items: Artifact[] }[] = [];
+  const seen = new Set<string>();
+  for (const a of filtered) {
+    const label = dayLabel(a.created_at);
+    if (!seen.has(label)) {
+      seen.add(label);
+      groups.push({ label, items: [] });
+    }
+    groups[groups.length - 1].items.push(a);
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-[#080D18]">
@@ -108,49 +195,70 @@ export default function ArtifactsScreen() {
             <p className="text-[12px] text-[#667386] mt-1">Generated deliverables will appear here.</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {filtered.map((art) => {
-              const Icon = iconFor(art.artifact_type);
-              return (
-                <div key={art.id} className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all group">
-                  <div className="flex items-center gap-4 px-5 py-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/15 flex items-center justify-center flex-none">
-                      <Icon size={18} className="text-[#8B5CF6]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-[13px] font-semibold text-[#F5F7FA]">{art.name}</p>
-                        <span className="text-[9px] font-bold bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded">{extFor(art.name)}</span>
-                        <span className="text-[9px] font-semibold text-[#F59E0B] bg-[#F59E0B]/8 px-1.5 py-0.5 rounded">{art.classification}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <p className="text-[11px] text-[#667386]">{art.artifact_type}</p>
-                        <span className="text-[#253248]">·</span>
-                        <p className="text-[11px] text-[#667386]">{new Date(art.created_at).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-none">
-                      <span className={`text-[11px] font-medium ${statusColor(art.status)}`}>{statusText(art.status)}</span>
-                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] hover:border-[#2e3e57] transition-all flex items-center gap-1.5">
-                          <Eye size={11} /> Preview
-                        </button>
-                        <button className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] hover:border-[#2e3e57] transition-all flex items-center gap-1.5">
-                          <ExternalLink size={11} /> Open
-                        </button>
-                        <a href={art.file_path || "#"} className="h-7 px-2.5 rounded-md text-[11px] text-[#8B5CF6] border border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/10 transition-all flex items-center gap-1.5">
-                          <Download size={11} />
-                        </a>
-                      </div>
-                    </div>
-                    <ChevronRight size={14} className="text-[#253248] group-hover:text-[#667386] transition-colors flex-none" />
-                  </div>
+          <div className="space-y-6">
+            {groups.map((group) => (
+              <div key={group.label}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <p className="text-[10px] font-semibold tracking-[0.12em] text-[#3a4a60] uppercase">{group.label}</p>
+                  <span className="text-[9px] text-[#667386]">· {group.items.length}</span>
+                  <div className="flex-1 h-px bg-[#1a2740]" />
                 </div>
-              );
-            })}
+                <div className="space-y-2.5">
+                  {group.items.map((art) => {
+                    const Icon = iconFor(art.artifact_type);
+                    return (
+                      <div key={art.id} className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all group">
+                        <div className="flex items-center gap-4 px-5 py-4">
+                          <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/15 flex items-center justify-center flex-none">
+                            <Icon size={18} className="text-[#8B5CF6]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-[13px] font-semibold text-[#F5F7FA]">{art.name}</p>
+                              <span className="text-[9px] font-bold bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded">{extFor(art.name, art.artifact_type)}</span>
+                              {(art.version ?? 1) > 1 && (
+                                <span className="flex items-center gap-1 text-[9px] font-semibold text-[#14B8A6] bg-[#14B8A6]/10 px-1.5 py-0.5 rounded">
+                                  <Layers size={9} /> v{art.version}
+                                </span>
+                              )}
+                              <span className="text-[9px] font-semibold text-[#F59E0B] bg-[#F59E0B]/8 px-1.5 py-0.5 rounded">{art.classification}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <p className="text-[11px] text-[#667386]">{art.artifact_type}</p>
+                              <span className="text-[#253248]">·</span>
+                              <p className="text-[11px] text-[#667386]">{new Date(art.created_at).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-none">
+                            <span className={`text-[11px] font-medium ${statusColor(art.status)}`}>{statusText(art.status)}</span>
+                            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => setPreview(art)}
+                                className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] hover:border-[#2e3e57] transition-all flex items-center gap-1.5"
+                              >
+                                <Eye size={11} /> Preview
+                              </button>
+                              <a
+                                href={api.artifacts.downloadUrl(art.artifact_id)}
+                                className="h-7 px-2.5 rounded-md text-[11px] text-[#8B5CF6] border border-[#8B5CF6]/25 hover:bg-[#8B5CF6]/10 transition-all flex items-center gap-1.5"
+                              >
+                                <Download size={11} /> Download
+                              </a>
+                            </div>
+                          </div>
+                          <ChevronRight size={14} className="text-[#253248] group-hover:text-[#667386] transition-colors flex-none" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {preview && <PreviewModal artifact={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }

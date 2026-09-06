@@ -21,6 +21,7 @@ import FilesScreen from "./screens/FilesScreen";
 import DocumentViewerScreen from "./screens/DocumentViewerScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import ErrorStateScreen from "./screens/ErrorStateScreen";
+import { Document, Project } from "./services/api";
 
 type View =
   | "chat"
@@ -97,6 +98,8 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [modelDrawerOpen, setModelDrawerOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -129,13 +132,13 @@ export default function App() {
       case "chat":
         return <ChatScreen onOpenModelDrawer={() => setModelDrawerOpen(true)} />;
       case "projects":
-        return <ProjectsScreen onSelectProject={() => setView("project-detail")} />;
+        return <ProjectsScreen onSelectProject={(p) => { setSelectedProject(p); setView("project-detail"); }} />;
       case "project-detail":
-        return <ProjectDetailScreen onBack={() => setView("projects")} />;
+        return <ProjectDetailScreen project={selectedProject} onBack={() => setView("projects")} />;
       case "files":
-        return <FilesScreen onSelectFile={() => setView("document-viewer")} />;
+        return <FilesScreen onSelectFile={(doc) => { setSelectedDoc(doc); setView("document-viewer"); }} />;
       case "document-viewer":
-        return <DocumentViewerScreen onBack={() => setView("files")} onAskAI={() => setView("chat")} />;
+        return <DocumentViewerScreen document={selectedDoc} onBack={() => setView("files")} onAskAI={() => setView("chat")} />;
       case "knowledge":
         return <KnowledgeScreen />;
       case "tasks":

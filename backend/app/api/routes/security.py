@@ -30,7 +30,8 @@ async def security_status(db: Session = Depends(get_db)):
     checks = {}
 
     try:
-        db.execute("SELECT 1")
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
         checks["database"] = True
     except Exception as e:
         logger.error("database_check_failed", error=str(e))
@@ -46,7 +47,7 @@ async def security_status(db: Session = Depends(get_db)):
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{settings.qdrant_url}/health")
+            resp = await client.get(f"{settings.qdrant_url}/livez")
             checks["qdrant"] = resp.status_code == 200
     except Exception as e:
         logger.error("qdrant_check_failed", error=str(e))
@@ -82,7 +83,7 @@ async def security_status(db: Session = Depends(get_db)):
             status="ACTIVE" if checks.get("ollama") else "UNAVAILABLE",
             status_color="text-[#14B8A6]" if checks.get("ollama") else "text-[#EF4444]",
             status_bg="bg-[#14B8A6]/10 border-[#14B8A6]/20" if checks.get("ollama") else "bg-[#EF4444]/10 border-[#EF4444]/20",
-            desc="Local models run on NVIDIA RTX A5000 hardware within the organization's infrastructure.",
+            desc="Local models run on the organization's on-prem GPU (NVIDIA RTX 4050, 6 GB).",
             indicator="active" if checks.get("ollama") else "blocked",
         ),
         SecurityItem(

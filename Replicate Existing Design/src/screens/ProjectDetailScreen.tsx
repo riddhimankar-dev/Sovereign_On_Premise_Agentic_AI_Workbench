@@ -1,133 +1,85 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowLeft, AlertTriangle, Clock, FileText, Package, ClipboardCheck,
   CheckSquare, Zap, ExternalLink, Eye, Download, Check, ChevronRight,
-  FileSpreadsheet,
+  FileSpreadsheet, Loader,
 } from "lucide-react";
+import { api, Project, Document, Task, Artifact, Approval } from "../services/api";
 
 interface ProjectDetailScreenProps {
+  project: Project | null;
   onBack: () => void;
 }
 
-const tabs = ["Overview", "Files", "AI Tasks", "Sources", "Artifacts", "Approvals"];
+const tabs = ["Overview", "Files", "AI Tasks", "Artifacts", "Approvals"];
 
-const projectFiles = [
-  { name: "P-102_Inspection_Report_2026.pdf", type: "PDF", size: "4.2 MB", classification: "CONFIDENTIAL", status: "Indexed", icon: FileText, iconColor: "text-[#8B5CF6]", iconBg: "bg-[#8B5CF6]/12" },
-  { name: "P-102_Equipment_Photo.jpg", type: "IMAGE", size: "2.8 MB", classification: "CONFIDENTIAL", status: "Indexed", icon: FileText, iconColor: "text-[#14B8A6]", iconBg: "bg-[#14B8A6]/12" },
-  { name: "P-102_Measurements.xlsx", type: "XLSX", size: "680 KB", classification: "INTERNAL", status: "Indexed", icon: FileSpreadsheet, iconColor: "text-[#22C55E]", iconBg: "bg-[#22C55E]/12" },
-  { name: "Pump_Inspection_SOP.pdf", type: "PDF", size: "1.1 MB", classification: "CONFIDENTIAL", status: "Indexed", icon: FileText, iconColor: "text-[#8B5CF6]", iconBg: "bg-[#8B5CF6]/12" },
-  { name: "P-102_Inspection_Report_2025.pdf", type: "PDF", size: "3.9 MB", classification: "CONFIDENTIAL", status: "Indexed", icon: FileText, iconColor: "text-[#8B5CF6]", iconBg: "bg-[#8B5CF6]/12" },
-  { name: "Vendor_Inspection_Report_2026.pdf", type: "PDF", size: "6.1 MB", classification: "CONFIDENTIAL", status: "Indexed", icon: FileText, iconColor: "text-[#8B5CF6]", iconBg: "bg-[#8B5CF6]/12" },
-];
-
-const projectArtifacts = [
-  { name: "Approval_Note_P-102_2026", ext: "DOCX", status: "Awaiting Approval", statusColor: "text-[#F59E0B]", created: "Today, 09:42", agent: "Inspection Analyst" },
-  { name: "Risk_Assessment_P-102", ext: "XLSX", status: "Verified", statusColor: "text-[#22C55E]", created: "Today, 09:40", agent: "Inspection Analyst" },
-];
-
-const projectTasks = [
-  { name: "P-102 Inspection Analysis", status: "Awaiting Approval", statusColor: "text-[#F59E0B]", steps: "10/12", agent: "Inspection Analyst", created: "Today, 09:41" },
-];
-
-const projectSources = [
-  { num: "01", title: "P-102 Inspection Report 2026", section: "Page 7", classification: "CONFIDENTIAL", relevance: 98 },
-  { num: "02", title: "Pump Inspection SOP v3.2", section: "Section 7.2", classification: "CONFIDENTIAL", relevance: 95 },
-  { num: "03", title: "P-102 Inspection Report 2025", section: "Page 4", classification: "CONFIDENTIAL", relevance: 87 },
-  { num: "04", title: "P-102 Maintenance History", section: "2025-10-12", classification: "INTERNAL", relevance: 82 },
-  { num: "05", title: "P-102 Equipment Datasheet", section: "Section 3", classification: "INTERNAL", relevance: 79 },
-  { num: "06", title: "Corrosion Assessment SOP", section: "Section 4.1", classification: "CONFIDENTIAL", relevance: 74 },
-];
-
-function OverviewTab() {
-  return (
-    <div className="space-y-5">
-      {/* Key metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Operating Pressure", value: "42 bar", limit: "Limit: 40 bar", status: "critical", statusText: "Exceeded" },
-          { label: "Corrosion Rate", value: "3.8 mm", limit: "Assessment required", status: "warning", statusText: "Engineering review" },
-          { label: "Vibration", value: "7.2 mm/s", limit: ">7 mm/s threshold", status: "warning", statusText: "High concern" },
-        ].map(({ label, value, limit, status, statusText }) => (
-          <div key={label} className={`rounded-xl border p-4 ${
-            status === "critical" ? "bg-[#EF4444]/6 border-[#EF4444]/20" : "bg-[#F59E0B]/6 border-[#F59E0B]/20"
-          }`}>
-            <p className="text-[10px] font-semibold tracking-widest text-[#667386] uppercase mb-2">{label}</p>
-            <p className={`text-[24px] font-semibold font-mono leading-none ${status === "critical" ? "text-[#EF4444]" : "text-[#F59E0B]"}`}>{value}</p>
-            <p className="text-[10px] text-[#667386] mt-1.5">{limit}</p>
-            <p className={`text-[10px] font-semibold mt-1 ${status === "critical" ? "text-[#EF4444]" : "text-[#F59E0B]"}`}>{statusText}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Historical trend */}
-      <div className="rounded-xl bg-[#0F1726] border border-[#253248] p-5">
-        <p className="text-[12px] font-semibold text-[#F5F7FA] mb-1">Historical Trend</p>
-        <p className="text-[10px] text-[#667386] mb-4">P-102 operating parameters 2024–2026</p>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { year: "2024", pressure: "34 bar", corrosion: "1.2 mm", vibration: "4.1 mm/s", status: "normal" },
-            { year: "2025", pressure: "37 bar", corrosion: "2.4 mm", vibration: "5.3 mm/s", status: "monitor" },
-            { year: "2026", pressure: "42 bar", corrosion: "3.8 mm", vibration: "7.2 mm/s", status: "critical" },
-          ].map(({ year, pressure, corrosion, vibration, status }) => (
-            <div key={year} className={`rounded-lg border p-3 ${
-              status === "critical" ? "bg-[#EF4444]/6 border-[#EF4444]/15" :
-              status === "monitor" ? "bg-[#F59E0B]/6 border-[#F59E0B]/15" :
-              "bg-[#141E2F] border-[#253248]"
-            }`}>
-              <p className={`text-[13px] font-semibold mb-2 ${
-                status === "critical" ? "text-[#EF4444]" : status === "monitor" ? "text-[#F59E0B]" : "text-[#22C55E]"
-              }`}>{year}</p>
-              <div className="space-y-1">
-                <p className="text-[11px] text-[#9AA6B5] font-mono">{pressure}</p>
-                <p className="text-[11px] text-[#9AA6B5] font-mono">{corrosion}</p>
-                <p className="text-[11px] text-[#9AA6B5] font-mono">{vibration}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recommendation */}
-      <div className="rounded-xl bg-[#F59E0B]/6 border border-[#F59E0B]/25 p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <AlertTriangle size={14} className="text-[#F59E0B]" />
-          <p className="text-[11px] font-semibold text-[#F59E0B] uppercase tracking-wide">AI Recommendation</p>
-        </div>
-        <p className="text-[13px] text-[#F5F7FA] font-medium leading-relaxed">
-          Engineering integrity review is recommended before continued operation under current conditions.
-        </p>
-        <p className="text-[11px] text-[#9AA6B5] mt-2">AI-generated · Requires authorized human review before action</p>
-      </div>
-
-      {/* Project metadata */}
-      <div className="rounded-xl bg-[#0F1726] border border-[#253248] p-5">
-        <p className="text-[11px] font-semibold text-[#667386] uppercase tracking-widest mb-3">Project Information</p>
-        <div className="grid grid-cols-2 gap-y-3 gap-x-8">
-          {[
-            { label: "Company", value: "ApexPetro Energy Limited" },
-            { label: "Facility", value: "Jamnagar Refinery Complex" },
-            { label: "Department", value: "Inspection & Integrity" },
-            { label: "Unit", value: "CDU-4" },
-            { label: "Asset", value: "P-102 (Centrifugal Pump)" },
-            { label: "Service", value: "Crude Transfer" },
-            { label: "Criticality", value: "HIGH" },
-            { label: "Classification", value: "CONFIDENTIAL" },
-            { label: "Created", value: "Today, 09:41" },
-            { label: "Last Activity", value: "2 min ago" },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-start justify-between gap-2">
-              <p className="text-[11px] text-[#667386] flex-none">{label}</p>
-              <p className="text-[11px] text-[#9AA6B5] text-right leading-snug">{value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function StatBadge({ children, tone }: { children: ReactNode; tone: "green" | "amber" | "red" | "neutral" }) {
+  const cls = {
+    green: "text-[#22C55E] bg-[#22C55E]/10 border-[#22C55E]/20",
+    amber: "text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/20",
+    red: "text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20",
+    neutral: "text-[#9AA6B5] bg-[#253248] border-[#253248]",
+  }[tone];
+  return <span className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border ${cls}`}>{children}</span>;
 }
 
-export default function ProjectDetailScreen({ onBack }: ProjectDetailScreenProps) {
+function riskTone(risk: string) {
+  if ((risk || "").toUpperCase() === "HIGH") return "red" as const;
+  if ((risk || "").toUpperCase() === "MEDIUM") return "amber" as const;
+  return "green" as const;
+}
+
+export default function ProjectDetailScreen({ project, onBack }: ProjectDetailScreenProps) {
   const [activeTab, setActiveTab] = useState("Overview");
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!project) return;
+    let active = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [docsRes, tasksRes, artsRes, apprRes] = await Promise.all([
+          api.documents.list(),
+          api.tasks.list({ project_id: project.id }),
+          api.artifacts.list({ project_id: project.id }),
+          api.approvals.list(),
+        ]);
+        if (!active) return;
+        const assetMatch = (doc: Document) =>
+          !project.asset || project.asset === "—" || doc.file_name.toUpperCase().includes(project.asset.toUpperCase());
+        setDocs(docsRes.documents.filter(assetMatch));
+        setTasks(tasksRes.tasks || []);
+        setArtifacts(artsRes.artifacts.filter((a) => a.project_id === project.id));
+        setApprovals(apprRes.approvals || []);
+      } catch (e) {
+        if (active) setError(e instanceof Error ? e.message : "Failed to load project details");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [project]);
+
+  if (!project) {
+    return (
+      <div className="h-full flex flex-col bg-[#080D18] items-center justify-center">
+        <p className="text-[12px] text-[#667386]">No project selected.</p>
+        <button onClick={onBack} className="mt-4 text-[11px] text-[#8B5CF6] hover:underline">Back to Projects</button>
+      </div>
+    );
+  }
+
+  const p = project;
+  const createdAt = p.created_at ? new Date(p.created_at).toLocaleString() : "—";
+  const updatedAt = p.updated_at ? new Date(p.updated_at).toLocaleString() : "—";
 
   return (
     <div className="h-full overflow-y-auto bg-[#080D18]">
@@ -143,29 +95,32 @@ export default function ProjectDetailScreen({ onBack }: ProjectDetailScreenProps
 
           <div className="flex items-start justify-between gap-6">
             <div>
-              {/* Context breadcrumb */}
               <div className="flex items-center gap-1.5 text-[10px] text-[#667386] mb-2 flex-wrap">
                 <span>ApexPetro Energy Limited</span>
                 <ChevronRight size={10} />
-                <span>Jamnagar Refinery Complex</span>
-                <ChevronRight size={10} />
-                <span>CDU-4</span>
-                <ChevronRight size={10} />
-                <span className="text-[#9AA6B5] font-medium">P-102</span>
+                <span>{p.unit || "—"}</span>
+                {p.asset && p.asset !== "—" && (
+                  <>
+                    <ChevronRight size={10} />
+                    <span className="text-[#9AA6B5] font-medium">{p.asset}</span>
+                  </>
+                )}
               </div>
 
-              <h1 className="text-[22px] font-semibold text-[#F5F7FA]">P-102 Equipment Integrity Review</h1>
-              <p className="text-[12px] text-[#667386] mt-0.5">Centrifugal Process Pump · Crude Transfer Service · Inspection & Integrity</p>
+              <h1 className="text-[22px] font-semibold text-[#F5F7FA]">{p.name}</h1>
+              <p className="text-[12px] text-[#667386] mt-0.5">{p.description || `${p.unit || "Unit"} · ${p.asset || "Asset not specified"}`}</p>
             </div>
 
             <div className="flex items-center gap-2 flex-none">
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/20 px-2.5 py-1 rounded-lg">
-                <AlertTriangle size={12} />
-                HIGH RISK
-              </span>
-              <span className="text-[11px] font-semibold text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-2.5 py-1 rounded-lg">
-                Awaiting Approval
-              </span>
+              {p.risk && p.risk !== "—" && (
+                <StatBadge tone={riskTone(p.risk)}>
+                  <AlertTriangle size={12} />
+                  {p.risk} RISK
+                </StatBadge>
+              )}
+              <StatBadge tone={p.status === "Completed" ? "green" : "amber"}>
+                {p.status}
+              </StatBadge>
             </div>
           </div>
 
@@ -182,7 +137,11 @@ export default function ProjectDetailScreen({ onBack }: ProjectDetailScreenProps
                 }`}
               >
                 {tab}
-                {tab === "Approvals" && <span className="ml-1.5 text-[9px] bg-[#F59E0B]/20 text-[#F59E0B] px-1 py-0.5 rounded-full">1</span>}
+                {tab === "Approvals" && approvals.length > 0 && (
+                  <span className="ml-1.5 text-[9px] bg-[#F59E0B]/20 text-[#F59E0B] px-1 py-0.5 rounded-full">
+                    {approvals.filter((a) => a.status.toUpperCase() === "PENDING").length}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -190,146 +149,201 @@ export default function ProjectDetailScreen({ onBack }: ProjectDetailScreenProps
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6">
-        {activeTab === "Overview" && <OverviewTab />}
-
-        {activeTab === "Files" && (
-          <div className="space-y-2">
-            {projectFiles.map((file) => {
-              const Icon = file.icon;
-              return (
-                <div key={file.name} className="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] cursor-pointer group transition-all">
-                  <div className={`w-9 h-9 rounded-lg ${file.iconBg} flex items-center justify-center flex-none`}>
-                    <Icon size={16} className={file.iconColor} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[#F5F7FA] truncate">{file.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded font-bold">{file.type}</span>
-                      <span className="text-[10px] text-[#667386]">{file.size}</span>
-                      <span className="text-[9px] text-[#F59E0B] font-semibold">{file.classification}</span>
-                    </div>
-                  </div>
-                  <span className="flex items-center gap-1 text-[10px] text-[#22C55E]">
-                    <Check size={10} /> {file.status}
-                  </span>
-                  <ChevronRight size={13} className="text-[#253248] group-hover:text-[#667386] transition-colors flex-none" />
-                </div>
-              );
-            })}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader size={24} className="text-[#8B5CF6] animate-spin" />
           </div>
-        )}
-
-        {activeTab === "AI Tasks" && (
-          <div className="space-y-3">
-            {projectTasks.map((task) => (
-              <div key={task.name} className="rounded-xl bg-[#0F1726] border border-[#253248] px-5 py-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-[14px] font-semibold text-[#F5F7FA]">{task.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Zap size={11} className="text-[#8B5CF6]" />
-                      <p className="text-[11px] text-[#667386]">{task.agent}</p>
-                      <span className="text-[#253248]">·</span>
-                      <p className="text-[11px] text-[#667386]">{task.created}</p>
-                    </div>
-                  </div>
-                  <span className={`text-[11px] font-semibold ${task.statusColor}`}>{task.status}</span>
+        ) : error ? (
+          <div className="rounded-xl bg-[#7F1D1D]/15 border border-[#7F1D1D]/40 px-4 py-3 text-[12px] text-[#FCA5A5]">
+            {error}
+          </div>
+        ) : (
+          <>
+          {activeTab === "Overview" && (
+            <div className="space-y-5">
+              {p.description && (
+                <div className="rounded-xl bg-[#0F1726] border border-[#253248] p-5">
+                  <p className="text-[11px] font-semibold text-[#667386] uppercase tracking-widest mb-2">Description</p>
+                  <p className="text-[13px] text-[#F5F7FA] leading-relaxed">{p.description}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-1 bg-[#253248] rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#14B8A6] rounded-full" style={{ width: "83%" }} />
-                  </div>
-                  <span className="text-[10px] font-mono text-[#667386]">{task.steps}</span>
+              )}
+
+              <div className="rounded-xl bg-[#0F1726] border border-[#253248] p-5">
+                <p className="text-[11px] font-semibold text-[#667386] uppercase tracking-widest mb-3">Project Information</p>
+                <div className="grid grid-cols-2 gap-y-3 gap-x-8">
+                  {[
+                    { label: "Company", value: "ApexPetro Energy Limited" },
+                    { label: "Unit", value: p.unit || "—" },
+                    { label: "Asset", value: p.asset || "—" },
+                    { label: "Status", value: p.status },
+                    { label: "Risk", value: p.risk || "—", color: riskTone(p.risk) === "red" ? "text-[#EF4444]" : "text-[#9AA6B5]" },
+                    { label: "Progress", value: `${p.progress}%` },
+                    { label: "Classification", value: p.classification, color: "text-[#F59E0B]" },
+                    { label: "Created", value: createdAt },
+                    { label: "Last Activity", value: updatedAt },
+                    { label: "Code", value: p.project_id },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="flex items-start justify-between gap-2">
+                      <p className="text-[11px] text-[#667386] flex-none">{label}</p>
+                      <p className={`text-[11px] text-right leading-snug ${color || "text-[#9AA6B5]"}`}>{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {activeTab === "Sources" && (
-          <div className="space-y-2">
-            {projectSources.map((src) => (
-              <div key={src.num} className="flex items-start gap-3 px-5 py-3.5 rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] cursor-pointer group transition-all">
-                <span className="text-[10px] font-mono font-semibold text-[#667386] w-5 flex-none mt-0.5">{src.num}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#F5F7FA]">{src.title}</p>
-                  <p className="text-[10px] text-[#9AA6B5] mt-0.5">{src.section}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-none">
-                  <span className="text-[9px] text-[#F59E0B] font-semibold">{src.classification}</span>
-                  <div className="w-8 h-1 bg-[#253248] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: `${src.relevance}%` }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "Artifacts" && (
-          <div className="space-y-2.5">
-            {projectArtifacts.map((art) => (
-              <div key={art.name} className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all group">
-                <div className="flex items-center gap-4 px-5 py-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/12 flex items-center justify-center flex-none">
-                    <FileText size={18} className="text-[#8B5CF6]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[13px] font-semibold text-[#F5F7FA]">{art.name}</p>
-                      <span className="text-[9px] bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded font-bold">{art.ext}</span>
+              <div className="rounded-xl bg-[#0F1726] border border-[#253248] p-5">
+                <p className="text-[11px] font-semibold text-[#667386] uppercase tracking-widest mb-3">Linked Data</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Files", value: docs.length, icon: FileText, color: "text-[#8B5CF6]" },
+                    { label: "Tasks", value: tasks.length, icon: ClipboardCheck, color: "text-[#14B8A6]" },
+                    { label: "Artifacts", value: artifacts.length, icon: Package, color: "text-[#22C55E]" },
+                  ].map(({ label, value, icon: Icon, color }) => (
+                    <div key={label} className="rounded-lg bg-[#141E2F] border border-[#253248] p-3 flex items-center gap-3">
+                      <Icon size={16} className={color} />
+                      <div>
+                        <p className="text-[18px] font-semibold text-[#F5F7FA] leading-none">{value}</p>
+                        <p className="text-[10px] text-[#667386] mt-1">{label}</p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-[#667386]">{art.agent} · {art.created}</p>
-                  </div>
-                  <p className={`text-[11px] font-medium ${art.statusColor} flex-none`}>{art.status}</p>
-                  <div className="flex gap-1.5 flex-none">
-                    <button className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] transition-all flex items-center gap-1">
-                      <Eye size={11} /> Preview
-                    </button>
-                    <button className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] transition-all flex items-center gap-1">
-                      <Download size={11} />
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "Approvals" && (
-          <div className="rounded-xl bg-[#F59E0B]/6 border border-[#F59E0B]/30 overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#F59E0B]/20 flex items-center gap-2">
-              <AlertTriangle size={14} className="text-[#F59E0B]" />
-              <p className="text-[12px] font-semibold text-[#F59E0B]">Human Review Required</p>
             </div>
-            <div className="px-5 py-5">
-              <p className="text-[14px] font-semibold text-[#F5F7FA] mb-4">P-102 Equipment Integrity Review</p>
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[
-                  { label: "Risk Level", value: "HIGH", color: "text-[#EF4444]" },
-                  { label: "Evidence", value: "6 sources", color: "text-[#9AA6B5]" },
-                  { label: "Verification", value: "PASSED", color: "text-[#22C55E]" },
-                  { label: "Artifact", value: "Approval_Note.docx", color: "text-[#9AA6B5]" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="rounded-lg bg-[#141E2F] border border-[#253248] p-2.5">
-                    <p className="text-[9px] text-[#667386] mb-1">{label}</p>
-                    <p className={`text-[12px] font-semibold ${color}`}>{value}</p>
+          )}
+
+          {activeTab === "Files" && (
+            docs.length === 0 ? (
+              <div className="text-center py-16">
+                <FileText size={28} className="text-[#253248] mx-auto mb-3" />
+                <p className="text-[13px] text-[#667386]">No documents linked to this project yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {docs.map((doc) => {
+                  const isPdf = (doc.file_type || "").toLowerCase() === "pdf";
+                  const isXlsx = (doc.file_type || "").toLowerCase() === "xlsx";
+                  const Icon = isXlsx ? FileSpreadsheet : FileText;
+                  const iconColor = isXlsx ? "text-[#22C55E]" : "text-[#8B5CF6]";
+                  return (
+                    <div key={doc.document_id} className="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all group">
+                      <div className="w-9 h-9 rounded-lg bg-[#141E2F] flex items-center justify-center flex-none">
+                        <Icon size={16} className={iconColor} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium text-[#F5F7FA] truncate">{doc.file_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[9px] bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded font-bold">{doc.file_type.toUpperCase()}</span>
+                          <span className="text-[10px] text-[#667386]">{(doc.file_size / 1024 / 1024).toFixed(1)} MB</span>
+                          <span className="text-[9px] text-[#F59E0B] font-semibold">{doc.classification}</span>
+                        </div>
+                      </div>
+                      <span className="flex items-center gap-1 text-[10px] text-[#22C55E]">
+                        <Check size={10} /> {doc.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {activeTab === "AI Tasks" && (
+            tasks.length === 0 ? (
+              <div className="text-center py-16">
+                <ClipboardCheck size={28} className="text-[#253248] mx-auto mb-3" />
+                <p className="text-[13px] text-[#667386]">No tasks created for this project yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tasks.map((task) => (
+                  <div key={task.task_id} className="rounded-xl bg-[#0F1726] border border-[#253248] px-5 py-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <p className="text-[14px] font-semibold text-[#F5F7FA]">{task.title}</p>
+                        {task.description && <p className="text-[11px] text-[#667386] mt-0.5">{task.description}</p>}
+                      </div>
+                      <span className={`text-[11px] font-semibold ${
+                        (task.status || "").toUpperCase() === "COMPLETED" ? "text-[#22C55E]" :
+                        (task.status || "").toUpperCase() === "IN_PROGRESS" ? "text-[#3B82F6]" :
+                        "text-[#F59E0B]"
+                      }`}>{task.status}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#667386]">
+                      <Zap size={10} className="text-[#8B5CF6]" />
+                      <span>Priority {task.priority}</span>
+                      {task.due_date && <><span className="text-[#253248]">·</span><span>Due {new Date(task.due_date).toLocaleDateString()}</span></>}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-[13px] text-[#F5F7FA] italic mb-4 leading-relaxed">
-                "Engineering integrity review is recommended before continued operation under current conditions."
-              </p>
-              <p className="text-[11px] text-[#667386] mb-4">AI-generated recommendation · Requires authorized human review</p>
-              <div className="flex gap-2">
-                <button className="flex-1 h-9 rounded-lg border border-[#253248] text-[12px] text-[#9AA6B5] hover:bg-[#182337] transition-all flex items-center justify-center gap-2">
-                  <Eye size={13} /> Review Evidence
-                </button>
-                <button className="h-9 px-5 rounded-lg border border-[#EF4444]/30 text-[12px] text-[#EF4444] hover:bg-[#EF4444]/10 transition-all">Reject</button>
-                <button className="h-9 px-6 rounded-lg bg-[#22C55E] text-[12px] text-white font-semibold hover:bg-[#16A34A] transition-all">Approve</button>
+            )
+          )}
+
+          {activeTab === "Artifacts" && (
+            artifacts.length === 0 ? (
+              <div className="text-center py-16">
+                <Package size={28} className="text-[#253248] mx-auto mb-3" />
+                <p className="text-[13px] text-[#667386]">Ask the assistant to generate a document for this project</p>
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className="space-y-2.5">
+                {artifacts.map((art) => (
+                  <div key={art.artifact_id} className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all group">
+                    <div className="flex items-center gap-4 px-5 py-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/12 flex items-center justify-center flex-none">
+                        <FileText size={18} className="text-[#8B5CF6]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-[13px] font-semibold text-[#F5F7FA]">{art.name}</p>
+                          <span className="text-[9px] bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded font-bold">{art.artifact_type}</span>
+                        </div>
+                        <p className="text-[11px] text-[#667386]">{new Date(art.created_at).toLocaleString()}</p>
+                      </div>
+                      {art.artifact_id && (
+                        <a href={`http://localhost:8000/api/artifacts/${art.artifact_id}/download`}
+                          className="h-7 px-2.5 rounded-md text-[11px] text-[#9AA6B5] bg-[#141E2F] border border-[#253248] hover:text-[#F5F7FA] transition-all flex items-center gap-1">
+                          <Download size={11} /> Download
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {activeTab === "Approvals" && (
+            approvals.length === 0 ? (
+              <div className="text-center py-16">
+                <AlertTriangle size={28} className="text-[#253248] mx-auto mb-3" />
+                <p className="text-[13px] text-[#667386]">No approvals linked to this project yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {approvals.map((ap) => (
+                  <div key={ap.id} className="rounded-xl bg-[#0F1726] border border-[#253248] px-5 py-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-[14px] font-semibold text-[#F5F7FA]">{ap.artifact_name || ap.approval_id}</p>
+                          <span className="text-[9px] bg-[#253248] text-[#9AA6B5] px-1.5 py-0.5 rounded font-bold">{ap.artifact_type}</span>
+                        </div>
+                        <p className="text-[11px] text-[#667386]">{ap.approval_id} · Requested by {ap.requested_by_name || `User #${ap.requested_by}`}</p>
+                      </div>
+                      <span className={`text-[11px] font-semibold ${
+                        ap.status.toUpperCase() === "PENDING" ? "text-[#F59E0B]" :
+                        ap.status.toUpperCase() === "APPROVED" ? "text-[#22C55E]" : "text-[#EF4444]"
+                      }`}>{ap.status}</span>
+                    </div>
+                    {ap.comments && <p className="text-[12px] text-[#9AA6B5] italic">{ap.comments}</p>}
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </>
         )}
       </div>
     </div>

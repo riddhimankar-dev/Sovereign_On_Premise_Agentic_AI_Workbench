@@ -5,6 +5,9 @@ from app.tools.work_order_lookup import WorkOrderLookupTool
 from app.tools.calculator import CalculatorTool
 from app.tools.document_reader import DocumentReaderTool
 from app.tools.code_executor import CodeExecutorTool
+from app.tools.data_analysis import AnalyzeDataTool
+from app.tools.document_generation_tool import GenerateDocumentTool, UpdateArtifactTool, ConvertArtifactTool
+from app.tools.coding_agent import CodingAgentTool
 
 __all__ = [
     "tool_registry",
@@ -14,4 +17,9 @@ __all__ = [
     "CalculatorTool",
     "DocumentReaderTool",
     "CodeExecutorTool",
+    "AnalyzeDataTool",
+    "GenerateDocumentTool",
+    "UpdateArtifactTool",
+    "ConvertArtifactTool",
+    "CodingAgentTool",
 ]

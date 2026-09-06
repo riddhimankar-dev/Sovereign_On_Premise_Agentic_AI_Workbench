@@ -28,7 +28,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function FilesScreen({ onSelectFile }: { onSelectFile?: () => void }) {
+export default function FilesScreen({ onSelectFile }: { onSelectFile?: (doc: Document) => void }) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +157,7 @@ export default function FilesScreen({ onSelectFile }: { onSelectFile?: () => voi
               const sc = statusColors[doc.status] || statusColors.READY;
               const isProcessing = doc.status === "PROCESSING" || doc.status === "UPLOADING";
               return (
-                <div key={doc.document_id} onClick={onSelectFile}
+                <div key={doc.document_id} onClick={() => onSelectFile?.(doc)}
                   className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all cursor-pointer group">
                   <div className="flex items-center gap-4 px-5 py-3.5">
                     <div className={`w-9 h-9 rounded-lg ${badge.iconBg} flex items-center justify-center flex-none`}>

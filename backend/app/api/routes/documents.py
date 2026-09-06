@@ -8,7 +8,6 @@ from app.core.config import settings
 from app.core.logging import get_logger
 import os
 import uuid
-from datetime import datetime
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -154,55 +153,14 @@ async def upload_document(
     db.refresh(document)
 
     try:
-        document.status = DocumentStatus.PROCESSING
-        db.commit()
-
-        from app.rag.parser import parse_document
-        from app.rag.chunker import chunk_document
-        from app.rag.embeddings import get_embeddings
-        from app.rag.vector_store import vector_store
-
-        text_content = await parse_document(file_path, file_type.value)
-        chunks = chunk_document(text_content, document_id=document_id)
-        document.page_count = len(chunks)
-
-        if chunks:
-            embeddings = await get_embeddings([c["content"] for c in chunks])
-            from app.db.models import DocumentChunk
-            for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-                doc_chunk = DocumentChunk(
-                    document_id=document.id,
-                    chunk_index=i,
-                    content=chunk["content"],
-                    page_number=chunk.get("page_number"),
-                    section=chunk.get("section"),
-                    token_count=chunk.get("token_count"),
-                    embedding=embedding,
-                    chunk_metadata=chunk.get("metadata", {}),
-                )
-                db.add(doc_chunk)
+        from app.services.document_service import ingest_document
+        result = await ingest_document(db, document_id, settings.company_id)
+        if "error" in result:
+            logger.error("document_processing_failed", document_id=document_id, error=result["error"])
+            document = db.query(Document).filter(Document.document_id == document_id).first()
+            document.status = DocumentStatus.ERROR
+            document.error_message = result["error"]
             db.commit()
-
-            await vector_store.upsert_chunks(
-                company_id=settings.company_id,
-                document_id=document_id,
-                chunks=[{
-                    "id": f"{document_id}_{i}",
-                    "content": c["content"],
-                    "embedding": e,
-                    "metadata": {
-                        "document_id": document_id,
-                        "chunk_index": i,
-                        "page_number": c.get("page_number"),
-                        "section": c.get("section"),
-                    }
-                } for i, (c, e) in enumerate(zip(chunks, embeddings))]
-            )
-
-        document.status = DocumentStatus.READY
-        document.indexed_at = datetime.utcnow()
-        db.commit()
-
     except Exception as e:
         logger.error("document_processing_failed", document_id=document_id, error=str(e))
         document.status = DocumentStatus.ERROR

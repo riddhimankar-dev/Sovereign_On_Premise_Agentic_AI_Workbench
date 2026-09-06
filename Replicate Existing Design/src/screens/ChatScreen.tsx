@@ -4,9 +4,10 @@ import {
   X, ExternalLink, AlertTriangle, Check, Circle, Play, Terminal,
   Cpu, HardDrive, Clock, Wifi, FileText, Sparkles, Code, Settings,
   Zap, Eye, Shield, Loader, ChevronRight, Loader2, Plus, MessageSquare,
-  FileSpreadsheet, RefreshCw,
+  FileSpreadsheet, RefreshCw, Download, Package, File, Pencil, Trash2,
 } from "lucide-react";
-import { api, ChatEvent, MessageRecord, ConversationSummary } from "../services/api";
+import { api, ChatEvent, MessageRecord, ConversationSummary, ChatSource, ChatArtifact } from "../services/api";
+import AnalysisView, { AnalysisEnvelope } from "../components/AnalysisView";
 
 type Mode = "ask" | "code";
 
@@ -14,27 +15,29 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   created_at?: string;
+  sources?: ChatSource[];
+  artifacts?: ChatArtifact[];
+  model?: string;
+  verified?: boolean | null;
+  analysis?: AnalysisEnvelope;
 }
 
-interface EvidenceItem {
-  source: string;
-  document_id: string;
-  content: string;
-  page: number | null;
-  section: string | null;
-  relevance: number | null;
-}
+type EvidenceItem = ChatSource;
 
 interface AgentStepView {
   label: string;
   done: boolean;
 }
 
-interface RunResult {
-  answer: string;
-  evidence: EvidenceItem[];
-  model: string;
-  verified: boolean | null;
+interface ArtifactLink {
+  artifact_id: string;
+  name?: string;
+  template?: string;
+  format?: string;
+  download_url?: string;
+  approval_id?: string | null;
+  version?: number;
+  parent_artifact_id?: string | null;
 }
 
 // ── SSE stream parser ─────────────────────────────────────────────────────────
@@ -218,81 +221,149 @@ function AgentPlanCard({ steps, running }: { steps: AgentStepView[]; running: bo
   );
 }
 
-// ── Answer Card ───────────────────────────────────────────────────────────────
+// ── AiBubble with persistent sources ─────────────────────────────────────────
 
-function AnswerCard({ result, onViewSource }: {
-  result: RunResult;
+function AiBubble({ message, index, onViewSource }: {
+  message: ChatMessage;
+  index: number;
   onViewSource: (e: EvidenceItem, i: number) => void;
 }) {
-  const [sourcesOpen, setSourcesOpen] = useState(true);
-  const srcs = result.evidence;
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const srcs = message.sources || [];
+  const arts = message.artifacts || [];
 
   return (
-    <div className="space-y-3.5">
-      <div className="rounded-[8px] bg-[#141E2F] border border-[#253248] p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-[9px] font-semibold text-[#8B5CF6] uppercase tracking-[0.15em]">Response</p>
-          {result.verified !== null && (
-            <span className={`ml-auto flex items-center gap-1 text-[10.5px] font-bold ${
-              result.verified ? "text-[#22C55E]" : "text-[#F59E0B]"
-            }`}>
-              {result.verified ? <Check size={11} /> : <AlertTriangle size={11} />}
-              {result.verified ? "VERIFIED" : "REVIEW RECOMMENDED"}
-            </span>
-          )}
-        </div>
-        <div className="text-[13.5px] text-[#F5F7FA] leading-relaxed whitespace-pre-wrap">
-          {result.answer}
-        </div>
+    <div className="flex gap-3 max-w-[680px]">
+      <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center flex-none mt-0.5 shadow-lg shadow-[#8B5CF6]/20">
+        <Zap size={12} className="text-white" />
       </div>
-
-      {srcs.length === 0 && (
-        <div className="rounded-[8px] bg-[#F59E0B]/6 border border-[#F59E0B]/25 p-4 flex items-start gap-3">
-          <AlertTriangle size={13} className="text-[#F59E0B] flex-none mt-0.5" />
-          <p className="text-[12px] text-[#9AA6B5] leading-relaxed">
-            No sources were retrieved for this question. The answer reflects a general response and should be reviewed for applicability.
-          </p>
-        </div>
-      )}
-
-      {srcs.length > 0 && (
-        <div className="rounded-[8px] bg-[#141E2F] border border-[#253248] overflow-hidden">
-          <button
-            onClick={() => setSourcesOpen(!sourcesOpen)}
-            className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[#182337] transition-colors"
-          >
-            <span className="text-[12px] font-semibold text-[#F5F7FA] flex-1 text-left">
-              Sources ({srcs.length})
+      <div className="flex-1 min-w-0 space-y-3.5">
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] font-semibold text-[#8B5CF6]">Knowledge Agent</p>
+          <span className="text-[9px] bg-[#8B5CF6]/12 text-[#8B5CF6] px-1.5 py-0.5 rounded-[3px] font-semibold">Agent</span>
+          {message.model && <p className="text-[10px] text-[#667386]">{message.model}</p>}
+          {message.verified !== null && message.verified !== undefined && (
+            <span className={`ml-auto flex items-center gap-1 text-[10.5px] font-bold ${
+              message.verified ? "text-[#22C55E]" : "text-[#F59E0B]"
+            }`}>
+              {message.verified ? <Check size={11} /> : <AlertTriangle size={11} />}
+              {message.verified ? "VERIFIED" : "REVIEW RECOMMENDED"}
             </span>
-            {sourcesOpen ? <ChevronUp size={12} className="text-[#667386]" /> : <ChevronDown size={12} className="text-[#667386]" />}
-          </button>
-          {sourcesOpen && (
-            <div className="border-t border-[#253248] divide-y divide-[#253248]">
-              {srcs.map((src, i) => (
-                <button
-                  key={i}
-                  onClick={() => onViewSource(src, i)}
-                  className="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-[#182337] group transition-colors text-left"
-                >
-                  <span className="text-[10px] font-mono font-semibold text-[#667386] w-5 flex-none mt-px">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#F5F7FA] leading-snug break-all">{src.document_id}</p>
-                    <p className="text-[10px] text-[#667386] mt-0.5">
-                      {src.page ? `Page ${src.page}` : "Passage"}{src.section ? ` · ${src.section}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-none">
-                    <div className="w-8 h-[3px] bg-[#253248] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: `${Math.min(100, src.relevance ?? 0)}%` }} />
-                    </div>
-                    <ChevronRight size={10} className="text-[#3a4a60] group-hover:text-[#667386] transition-colors" />
-                  </div>
-                </button>
-              ))}
-            </div>
           )}
+          {message.created_at && <p className="text-[10px] text-[#667386] ml-auto">{message.created_at}</p>}
+        </div>
+
+        <div className="rounded-[8px] bg-[#141E2F] border border-[#253248] p-4">
+          <div className="text-[13.5px] text-[#F5F7FA] leading-relaxed whitespace-pre-wrap">{message.content}</div>
+        </div>
+
+        {!!srcs.length && (
+          <div className="rounded-[8px] bg-[#141E2F] border border-[#253248] overflow-hidden">
+            <button
+              onClick={() => setSourcesOpen(!sourcesOpen)}
+              className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[#182337] transition-colors"
+            >
+              <span className="text-[12px] font-semibold text-[#F5F7FA] flex-1 text-left">
+                Sources ({srcs.length})
+              </span>
+              {sourcesOpen ? <ChevronUp size={12} className="text-[#667386]" /> : <ChevronDown size={12} className="text-[#667386]" />}
+            </button>
+            {sourcesOpen && (
+              <div className="border-t border-[#253248] divide-y divide-[#253248]">
+                {srcs.map((src, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onViewSource(src, i)}
+                    className="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-[#182337] group transition-colors text-left"
+                  >
+                    <span className="text-[10px] font-mono font-semibold text-[#667386] w-5 flex-none mt-px">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-medium text-[#F5F7FA] leading-snug break-all">{src.document_id}</p>
+                      <p className="text-[10px] text-[#667386] mt-0.5">
+                        {src.page ? `Page ${src.page}` : "Passage"}{src.section ? ` · ${src.section}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-none">
+                      <div className="w-8 h-[3px] bg-[#253248] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: `${Math.min(100, src.relevance ?? 0)}%` }} />
+                      </div>
+                      <ChevronRight size={10} className="text-[#3a4a60] group-hover:text-[#667386] transition-colors" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!!arts.length && <GeneratedArtifactsCard artifacts={arts as ArtifactLink[]} />}
+
+        {message.analysis && Object.keys(message.analysis).length > 0 && (
+          <AnalysisView analysis={message.analysis} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Generated Artifacts Card ──────────────────────────────────────────────────
+
+function artifactExt(format?: string): string {
+  return (format || "file").toUpperCase();
+}
+
+function artifactIcon(format?: string) {
+  const f = (format || "").toLowerCase();
+  if (f.includes("xls") || f.includes("sheet")) return FileSpreadsheet;
+  if (f.includes("ppt")) return FileText;
+  if (f.includes("py") || f.includes("code")) return Package;
+  return FileText;
+}
+
+function GeneratedArtifactsCard({ artifacts }: { artifacts: ArtifactLink[] }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="rounded-[8px] bg-[#0F1726] border border-[#14B8A6]/25 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-[#141E2F] transition-colors text-left"
+      >
+        <div className="w-7 h-7 rounded-[6px] bg-[#14B8A6]/12 flex items-center justify-center flex-none">
+          <FileText size={13} className="text-[#14B8A6]" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[12.5px] font-semibold text-[#F5F7FA]">Generated documents</p>
+          <p className="text-[10px] text-[#667386]">{artifacts.length} artifact{artifacts.length === 1 ? "" : "s"} ready for review</p>
+        </div>
+        {open ? <ChevronUp size={12} className="text-[#667386]" /> : <ChevronDown size={12} className="text-[#667386]" />}
+      </button>
+      {open && (
+        <div className="border-t border-[#253248] divide-y divide-[#253248]">
+          {artifacts.map((art) => {
+            const Icon = artifactIcon(art.format);
+            return (
+              <div key={art.artifact_id} className="flex items-center gap-3 px-4 py-3">
+                <div className="w-8 h-8 rounded-[7px] bg-[#8B5CF6]/12 flex items-center justify-center flex-none">
+                  <Icon size={14} className="text-[#8B5CF6]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12.5px] font-medium text-[#F5F7FA] truncate">{art.name || "Generated artifact"}</p>
+                  <p className="text-[10px] text-[#667386]">
+                    {artifactExt(art.format)}{art.template ? ` · ${art.template.replace(/_/g, " ")}` : ""} · READY FOR REVIEW
+                  </p>
+                </div>
+                <a
+                  href={api.artifacts.downloadUrl(art.artifact_id)}
+                  className="flex-none w-8 h-8 rounded-[6px] flex items-center justify-center text-[#14B8A6] border border-[#14B8A6]/25 hover:bg-[#14B8A6]/10 transition-all"
+                  title="Download artifact"
+                >
+                  <Download size={13} />
+                </a>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -316,33 +387,50 @@ function UserBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-function AiBubble({ message, index }: { message: ChatMessage; index: number }) {
-  return (
-    <div className="flex gap-3 max-w-[680px]">
-      <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center flex-none mt-0.5 shadow-lg shadow-[#8B5CF6]/20">
-        <Zap size={12} className="text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-[11px] font-semibold text-[#8B5CF6]">Knowledge Agent</p>
-          <span className="text-[9px] bg-[#8B5CF6]/12 text-[#8B5CF6] px-1.5 py-0.5 rounded-[3px] font-semibold">Agent</span>
-          {message.created_at && <p className="text-[10px] text-[#667386]">{message.created_at}</p>}
-        </div>
-        <div className="text-[13.5px] text-[#F5F7FA] leading-relaxed whitespace-pre-wrap">{message.content}</div>
-      </div>
-    </div>
-  );
-}
-
 // ── Conversation Sidebar ──────────────────────────────────────────────────────
 
-function ConversationSidebar({ conversations, activeId, onSelect, onNew }: {
+function ConversationSidebar({ conversations, activeId, onSelect, onNew, onRename, onDelete }: {
   conversations: ConversationSummary[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onRename: (id: string, title: string) => Promise<void> | void;
+  onDelete: (id: string) => Promise<void> | void;
 }) {
   const [open, setOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const renameRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (renamingId) renameRef.current?.select();
+  }, [renamingId]);
+
+  function startRename(id: string, current: string | null) {
+    setRenamingId(id);
+    setRenameValue(current || "");
+  }
+
+  async function saveRename() {
+    if (!renamingId) return;
+    const title = renameValue.trim();
+    const id = renamingId;
+    if (title) {
+      try {
+        await onRename(id, title);
+      } catch {
+        /* keep UI in sync via parent state */
+      }
+    }
+    setRenamingId(null);
+  }
+
+  function handleKey(e: React.KeyboardEvent) {
+    if (e.key === "Enter") { e.preventDefault(); void saveRename(); }
+    else if (e.key === "Escape") setRenamingId(null);
+  }
+
   return (
     <>
       <button
@@ -353,7 +441,7 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew }: {
         <MessageSquare size={15} />
       </button>
       {open && (
-        <div className="absolute left-3 top-14 z-30 w-[260px] bg-[#0F1726] border border-[#253248] rounded-[10px] shadow-2xl overflow-hidden flex flex-col animate-fade-up">
+        <div className="absolute left-3 top-14 z-30 w-[280px] bg-[#0F1726] border border-[#253248] rounded-[10px] shadow-2xl overflow-hidden flex flex-col animate-fade-up">
           <div className="flex items-center justify-between px-3.5 py-3 border-b border-[#1a2740]">
             <p className="text-[11px] font-semibold text-[#F5F7FA]">Conversations</p>
             <button
@@ -367,23 +455,100 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew }: {
             {conversations.length === 0 && (
               <p className="px-4 py-6 text-center text-[11px] text-[#667386]">No conversations yet.</p>
             )}
-            {conversations.map((c) => (
+            {conversations.map((c) => {
+              const isRenaming = renamingId === c.conversation_id;
+              return (
+                <div
+                  key={c.conversation_id}
+                  onDoubleClick={() => startRename(c.conversation_id, c.title)}
+                  className={`group w-full text-left px-3.5 py-2.5 hover:bg-[#141E2F] transition-colors flex items-start gap-2 ${
+                    activeId === c.conversation_id ? "bg-[#8B5CF6]/8" : ""
+                  }`}
+                >
+                  <MessageSquare size={13} className="text-[#8B5CF6] flex-none mt-0.5" />
+                  {isRenaming ? (
+                    <div className="flex-1 min-w-0 flex items-center gap-1">
+                      <input
+                        ref={renameRef}
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={handleKey}
+                        onBlur={() => void saveRename()}
+                        placeholder="Chat title"
+                        className="flex-1 min-w-0 bg-[#141E2F] border border-[#8B5CF6]/40 rounded px-2 py-1 text-[12px] text-[#F5F7FA] outline-none"
+                      />
+                      <button onClick={() => void saveRename()} className="text-[#14B8A6] hover:text-[#22D3A5]" title="Save">
+                        <Check size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { onSelect(c.conversation_id); setOpen(false); }}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <span className={`block text-[12px] truncate ${activeId === c.conversation_id ? "text-[#A78BFA] font-medium" : "text-[#F5F7FA]"}`}>
+                          {c.title || "Untitled"}
+                        </span>
+                        <span className="text-[9.5px] text-[#667386]">{c.updated_at}</span>
+                      </button>
+                      <div className="flex items-center gap-0.5 flex-none opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => startRename(c.conversation_id, c.title)}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[#667386] hover:text-[#F5F7FA] hover:bg-[#182337] transition-colors"
+                          title="Rename"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(c.conversation_id)}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[#667386] hover:text-[#FCA5A5] hover:bg-[#182337] transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setConfirmDeleteId(null)}>
+          <div className="flex-1 absolute inset-0 bg-black/50" />
+          <div
+            className="relative bg-[#0F1726] border border-[#253248] rounded-[12px] w-[380px] p-5 animate-fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-9 h-9 rounded-[8px] bg-[#7F1D1D]/20 flex items-center justify-center mb-3">
+              <Trash2 size={15} className="text-[#FCA5A5]" />
+            </div>
+            <h3 className="text-[14px] font-semibold text-[#F5F7FA] mb-1">Delete conversation?</h3>
+            <p className="text-[12px] text-[#9AA6B5] leading-relaxed mb-4">
+              This permanently deletes the conversation and all of its messages. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
               <button
-                key={c.conversation_id}
-                onClick={() => { onSelect(c.conversation_id); setOpen(false); }}
-                className={`w-full text-left px-3.5 py-2.5 hover:bg-[#141E2F] transition-colors flex items-start gap-2 ${
-                  activeId === c.conversation_id ? "bg-[#8B5CF6]/8" : ""
-                }`}
+                onClick={() => setConfirmDeleteId(null)}
+                className="h-8 px-3.5 rounded-[7px] bg-[#141E2F] border border-[#253248] text-[#9AA6B5] text-[12px] font-semibold hover:text-[#F5F7FA] transition-colors"
               >
-                <MessageSquare size={13} className="text-[#8B5CF6] flex-none mt-0.5" />
-                <span className="flex-1 min-w-0">
-                  <span className={`block text-[12px] truncate ${activeId === c.conversation_id ? "text-[#A78BFA] font-medium" : "text-[#F5F7FA]"}`}>
-                    {c.title || "Untitled"}
-                  </span>
-                  <span className="text-[9.5px] text-[#667386]">{c.updated_at}</span>
-                </span>
+                Cancel
               </button>
-            ))}
+              <button
+                onClick={() => {
+                  const id = confirmDeleteId;
+                  setConfirmDeleteId(null);
+                  void onDelete(id);
+                }}
+                className="h-8 px-3.5 rounded-[7px] bg-[#D0314C]/90 hover:bg-[#D0314C] text-white text-[12px] font-semibold transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -393,18 +558,54 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew }: {
 
 // ── Composer ──────────────────────────────────────────────────────────────────
 
-function Composer({ message, setMessage, onSend, running }: {
+interface ComposerAttachment {
+  name: string;
+  status: "uploading" | "ready" | "error";
+  error?: string;
+}
+
+function Composer({ message, setMessage, onSend, running, attachments, onAttach, onRemoveAttachment }: {
   message: string;
   setMessage: (m: string) => void;
   onSend: () => void;
   running: boolean;
+  attachments: ComposerAttachment[];
+  onAttach: (file: File) => void;
+  onRemoveAttachment: (name: string) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   function handleSend() {
     if (message.trim() && !running) onSend();
   }
+
+  function pick() {
+    if (running) return;
+    fileInputRef.current?.click();
+  }
+
   return (
     <div className="flex-none px-4 py-3 border-t border-[#253248]">
       <div className="max-w-[760px] mx-auto rounded-[10px] bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] focus-within:border-[#8B5CF6]/40 transition-all overflow-hidden">
+        {attachments.length > 0 && (
+          <div className="px-3 pt-3 flex flex-wrap gap-2">
+            {attachments.map((a) => (
+              <div key={a.name} className="flex items-center gap-2 rounded-md bg-[#141E2F] border border-[#253248] px-2.5 py-1.5">
+                <File size={12} className="text-[#8B5CF6]" />
+                <span className="text-[11px] text-[#F5F7FA] max-w-[180px] truncate">{a.name}</span>
+                {a.status === "uploading" ? (
+                  <Loader2 size={11} className="text-[#667386] animate-spin" />
+                ) : a.status === "error" ? (
+                  <span className="text-[9px] text-[#FCA5A5]">{a.error}</span>
+                ) : (
+                  <button onClick={() => onRemoveAttachment(a.name)} className="text-[#667386] hover:text-[#F5F7FA] transition-colors">
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -415,14 +616,18 @@ function Composer({ message, setMessage, onSend, running }: {
           style={{ maxHeight: "120px" }}
         />
         <div className="flex items-center gap-2 px-3 pb-3 pt-1">
-          {[
-            { icon: Paperclip, title: "Attach file" },
-            { icon: BookOpen, title: "Search knowledge" },
-          ].map(({ icon: Icon, title }) => (
-            <button key={title} title={title} className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#667386] hover:text-[#9AA6B5] hover:bg-[#141E2F] transition-all">
-              <Icon size={13} />
-            </button>
-          ))}
+          <button onClick={pick} title="Attach file" disabled={running} className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#667386] hover:text-[#9AA6B5] hover:bg-[#141E2F] transition-all disabled:opacity-40">
+            <Paperclip size={13} />
+          </button>
+          <button title="Search knowledge" className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#667386] hover:text-[#9AA6B5] hover:bg-[#141E2F] transition-all">
+            <BookOpen size={13} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(f); e.target.value = ""; }}
+          />
           <button
             onClick={onSend}
             disabled={!message.trim() || running}
@@ -498,10 +703,10 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
   const [steps, setSteps] = useState<AgentStepView[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<RunResult | null>(null);
   const [evidenceSource, setEvidenceSource] = useState<{ item: EvidenceItem; index: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -528,9 +733,31 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     setActiveId(null);
     setMessages([]);
     setSteps([]);
-    setResult(null);
     setError(null);
+    setAttachments([]);
   }, []);
+
+  const handleRenameConversation = useCallback(async (id: string, title: string) => {
+    try {
+      const updated = await api.chat.renameConversation(id, title);
+      setConversations((prev) => prev.map((c) => c.conversation_id === id ? { ...c, title: updated.title } : c));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to rename conversation");
+    }
+  }, []);
+
+  const handleDeleteConversation = useCallback(async (id: string) => {
+    try {
+      await api.chat.deleteConversation(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete conversation");
+      return;
+    }
+    setConversations((prev) => prev.filter((c) => c.conversation_id !== id));
+    if (activeId === id) {
+      newChat();
+    }
+  }, [activeId, newChat]);
 
   const selectConversation = useCallback(async (id: string) => {
     newChat();
@@ -542,6 +769,11 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
         role: m.role,
         content: m.content,
         created_at: formatTime(m.created_at),
+        sources: (m.sources || []) as ChatSource[],
+        artifacts: (m.artifacts || []) as ChatArtifact[],
+        model: m.meta?.model || undefined,
+        verified: m.meta?.verified !== undefined ? m.meta!.verified : null,
+        analysis: m.meta?.analysis || undefined,
       })));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load conversation");
@@ -554,7 +786,6 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     setRunning(true);
     setError(null);
     setSteps([]);
-    setResult(null);
 
     let convId = activeId;
     if (!convId) {
@@ -575,21 +806,45 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     try {
       const res = await api.chat.stream({ query, conversation_id: convId });
       const planSteps: string[] = [];
+      const artifactLinks: ArtifactLink[] = [];
+      let runVerified: boolean | null = null;
 
       for await (const ev of streamEvents(res)) {
         if (ev.event === "plan_created" && ev.steps) {
           planSteps.push(...ev.steps);
           setSteps(planSteps.map((s) => ({ label: s, done: false })));
+        } else if (ev.event === "verification_completed") {
+          runVerified = ev.verified !== undefined ? ev.verified : null;
+        } else if (ev.event === "artifact_created" && ev.artifact) {
+          const a = ev.artifact as ArtifactLink;
+          if (a?.artifact_id && !artifactLinks.some((x) => x.artifact_id === a.artifact_id)) {
+            artifactLinks.push(a);
+          }
         } else if (ev.event === "run_completed") {
           setSteps(planSteps.map((s) => ({ label: s, done: true })));
-          setResult({
-            answer: ev.answer || "",
-            evidence: (ev.evidence || []) as EvidenceItem[],
-            model: ev.model || "",
-            verified: ev.verified !== undefined ? ev.verified : null,
-          });
+          for (const a of ev.artifacts || []) {
+            if (a?.artifact_id && !artifactLinks.some((x) => x.artifact_id === a.artifact_id)) {
+              artifactLinks.push(a);
+            }
+          }
+          const analysis = ev.analysis || undefined;
           if (ev.answer) {
-            setMessages((prev) => [...prev, { role: "assistant", content: ev.answer as string }]);
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: ev.answer as string,
+              sources: (ev.evidence || []) as ChatSource[],
+              artifacts: artifactLinks,
+              model: ev.model || undefined,
+              verified: ev.verified !== undefined ? ev.verified : runVerified,
+              analysis,
+            }]);
+          } else if (artifactLinks.length > 0) {
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: "Generated documents are ready below.",
+              artifacts: artifactLinks,
+              model: ev.model || undefined,
+            }]);
           }
         } else if (ev.event === "run_failed") {
           setError(`The agent could not complete the request. ${ev.error || ""}`.trim());
@@ -604,10 +859,37 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     }
   }
 
+  async function handleAttach(file: File) {
+    const name = file.name;
+    setAttachments((prev) => [...prev, { name, status: "uploading" }]);
+    let convId = activeId;
+    if (!convId) {
+      try {
+        const created = await api.chat.createConversation();
+        convId = created.conversation_id;
+        setActiveId(convId);
+      } catch (e) {
+        setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "error", error: "Failed to start conversation" } : a));
+        return;
+      }
+    }
+    try {
+      await api.chat.uploadAttachment(convId, file);
+      setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "ready" } : a));
+    } catch (e) {
+      setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "error", error: "Upload failed" } : a));
+    }
+  }
+
+  function handleRemoveAttachment(name: string) {
+    setAttachments((prev) => prev.filter((a) => a.name !== name));
+  }
+
   function handleSend() {
     const q = message.trim();
     if (!q || running) return;
     setMessage("");
+    setAttachments([]);
     void runQuery(q);
   }
 
@@ -625,12 +907,14 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
   return (
     <div className="h-full flex flex-col bg-[#080D18] relative">
       <div className="flex-none flex items-center gap-1 px-3 pt-2">
-        <ConversationSidebar
-          conversations={conversations}
-          activeId={activeId}
-          onSelect={selectConversation}
-          onNew={newChat}
-        />
+<ConversationSidebar
+              conversations={conversations}
+              activeId={activeId}
+              onSelect={(id) => void selectConversation(id)}
+              onNew={newChat}
+              onRename={handleRenameConversation}
+              onDelete={handleDeleteConversation}
+            />
         <button
           onClick={() => { setMode("code"); }}
           className="flex items-center gap-1.5 h-8 px-3 rounded-[7px] bg-[#141E2F] border border-[#253248] text-[#9AA6B5] text-[11.5px] font-medium hover:border-[#14B8A6]/40 hover:text-[#14B8A6] transition-all"
@@ -666,9 +950,7 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
             {messages.map((m, i) =>
               m.role === "user"
                 ? <UserBubble key={i} message={m} />
-                : m.content === result?.answer && i === messages.length - 1 && result
-                ? null
-                : <AiBubble key={i} message={m} index={i} />
+                : <AiBubble key={i} message={m} index={i} onViewSource={(item, j) => setEvidenceSource({ item, index: j })} />
             )}
 
             {running && (
@@ -690,21 +972,8 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
               </div>
             )}
 
-            {!running && result && (
-              <div className="flex gap-3 max-w-[680px]">
-                <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center flex-none mt-0.5 shadow-lg shadow-[#8B5CF6]/20">
-                  <Zap size={12} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-3">
-                    <p className="text-[11px] font-semibold text-[#8B5CF6]">Knowledge Agent</p>
-                    <span className="text-[9px] bg-[#8B5CF6]/12 text-[#8B5CF6] px-1.5 py-0.5 rounded-[3px] font-semibold">Agent</span>
-                    {result.model && <p className="text-[10px] text-[#667386]">{result.model}</p>}
-                  </div>
-                  {steps.length > 0 && <div className="mb-3"><AgentPlanCard steps={steps} running={false} /></div>}
-                  <AnswerCard result={result} onViewSource={(item, i) => setEvidenceSource({ item, index: i })} />
-                </div>
-              </div>
+            {!running && steps.length > 0 && (
+              <div className="max-w-[680px]"><AgentPlanCard steps={steps} running={false} /></div>
             )}
 
             {error && (
@@ -718,7 +987,15 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
         )}
       </div>
 
-      <Composer message={message} setMessage={setMessage} onSend={handleSend} running={running} />
+      <Composer
+        message={message}
+        setMessage={setMessage}
+        onSend={handleSend}
+        running={running}
+        attachments={attachments}
+        onAttach={handleAttach}
+        onRemoveAttachment={handleRemoveAttachment}
+      />
       {evidenceSource && (
         <EvidenceDrawer source={evidenceSource.item} index={evidenceSource.index} onClose={() => setEvidenceSource(null)} />
       )}
@@ -738,10 +1015,31 @@ const pythonCode: CodeToken[][] = [
   [{ text: "print", cls: "text-[#93C5FD]" }, { text: "(", cls: "text-[#9AA6B5]" }, { text: 'f"Deviation: {deviation} bar"', cls: "text-[#86EFAC]" }, { text: ")", cls: "text-[#9AA6B5]" }],
 ];
 
+const codeSource = pythonCode.map((line) => line.map((t) => t.text).join("")).join("\n");
+
 function CodeSandbox({ onBack }: { onBack: () => void }) {
-  const [ran, setRan] = useState(false);
+  const [output, setOutput] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  function runCode() { setRunning(true); setTimeout(() => { setRunning(false); setRan(true); }, 1200); }
+  const [error, setError] = useState<string | null>(null);
+
+  async function runCode() {
+    setRunning(true);
+    setError(null);
+    setOutput(null);
+    try {
+      const res = await api.code.run(codeSource, 30);
+      const parts = [];
+      if (res.stdout) parts.push(res.stdout.trimEnd());
+      if (res.stderr) parts.push(res.stderr.trimEnd());
+      parts.push(`\n[exit ${res.return_code}] completed in ${res.execution_ms} ms · ${res.sandbox}`);
+      setOutput(parts.join("\n").trim());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to run code");
+    } finally {
+      setRunning(false);
+    }
+  }
+
   return (
     <div className="h-full flex flex-col bg-[#080D18]">
       <div className="flex-none px-5 py-3 border-b border-[#253248] bg-[#0F1726] flex items-center gap-3">
@@ -751,7 +1049,7 @@ function CodeSandbox({ onBack }: { onBack: () => void }) {
         <div className="h-4 w-px bg-[#253248]" />
         <Terminal size={13} className="text-[#14B8A6]" />
         <p className="text-[13px] font-semibold text-[#F5F7FA]">Secure Code Sandbox</p>
-        <p className="text-[11px] text-[#667386]">Demonstration environment</p>
+        <p className="text-[11px] text-[#667386]">Live execution · isolated temp dir · audited</p>
       </div>
       <div className="flex-1 flex min-h-0">
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -773,23 +1071,20 @@ function CodeSandbox({ onBack }: { onBack: () => void }) {
               className={`h-8 px-4 rounded-[6px] text-[12px] font-semibold flex items-center gap-2 transition-all ${
                 running ? "bg-[#8B5CF6]/30 text-[#A78BFA] cursor-not-allowed" : "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
               }`}>
-              <Play size={12} /> {running ? "Running..." : "Run Code"}
+              <Play size={12} /> {running ? "Running…" : "Run Code"}
             </button>
-            {ran && <span className="text-[11px] text-[#22C55E]">Completed</span>}
+            {output !== null && <span className="text-[11px] text-[#22C55E]">Completed</span>}
           </div>
-          {(ran || running) && (
+          {(output !== null || running || error) && (
             <div className="border-t border-[#253248] p-4 bg-[#080D18]">
               <p className="text-[8.5px] font-semibold tracking-[0.15em] text-[#667386] uppercase mb-2">Output</p>
-              <div className="font-mono text-[12px] space-y-0.5">
-                {ran ? (
-                  <>
-                    <p className="text-[#14B8A6]">Deviation: 2 bar</p>
-                    <p className="text-[#9AA6B5]">Completed</p>
-                  </>
-                ) : (
-                  <p className="text-[#667386]">Executing…</p>
-                )}
-              </div>
+              {running ? (
+                <p className="font-mono text-[12px] text-[#667386]">Executing in isolated sandbox…</p>
+              ) : error ? (
+                <pre className="font-mono text-[12px] text-[#FCA5A5] whitespace-pre-wrap">{error}</pre>
+              ) : output ? (
+                <pre className="font-mono text-[12px] text-[#9AA6B5] whitespace-pre-wrap">{output}</pre>
+              ) : null}
             </div>
           )}
         </div>

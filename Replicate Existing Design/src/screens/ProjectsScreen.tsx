@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { api, Project } from "../services/api";
 import { FolderOpen, Clock, FileText, Package, AlertTriangle, ChevronRight, Plus, Loader } from "lucide-react";
 
-export default function ProjectsScreen({ onSelectProject }: { onSelectProject?: () => void }) {
+export default function ProjectsScreen({ onSelectProject }: { onSelectProject?: (project: Project) => void }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function ProjectsScreen({ onSelectProject }: { onSelectProject?: 
               return (
                 <div
                   key={p.id}
-                  onClick={onSelectProject}
+                  onClick={() => onSelectProject?.(project)}
                   className="rounded-xl bg-[#0F1726] border border-[#253248] hover:border-[#2e3e57] transition-all cursor-pointer group overflow-hidden"
                 >
                   <div className="px-5 py-4">

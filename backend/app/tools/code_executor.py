@@ -1,6 +1,9 @@
 from typing import Dict, Any
 from app.tools.base import BaseTool, ToolInput, ToolOutput, tool_registry
 from app.core.logging import get_logger
+import os
+import subprocess
+import tempfile
 
 logger = get_logger(__name__)
 
@@ -10,6 +13,21 @@ class CodeExecutorInput(ToolInput):
     language: str = "python"
     timeout: int = 30
     files: Dict[str, str] = {}
+
+
+def _sandbox_limit() -> Any:
+    try:
+        import resource
+
+        def limiter() -> None:
+            resource.setrlimit(resource.RLIMIT_CPU, (10, 10))
+            resource.setrlimit(resource.RLIMIT_FSIZE, (4 * 1024 * 1024, 4 * 1024 * 1024))
+            resource.setrlimit(resource.RLIMIT_NOFILE, (128, 128))
+            os.setpgrp()
+
+        return limiter
+    except Exception:
+        return os.setpgrp
 
 
 class CodeExecutorTool(BaseTool):
@@ -25,10 +43,6 @@ class CodeExecutorTool(BaseTool):
         if not code:
             return ToolOutput(success=False, error="No code provided")
 
-        import subprocess
-        import tempfile
-        import os
-
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 for filename, content in files.items():
@@ -40,12 +54,20 @@ class CodeExecutorTool(BaseTool):
                 with open(code_file, "w") as f:
                     f.write(code)
 
+                env = {
+                    "PATH": os.environ.get("PATH", ""),
+                    "HOME": tmpdir,
+                    "TMPDIR": tmpdir,
+                }
+
                 result = subprocess.run(
-                    ["python3", code_file],
+                    ["python3", "-I", "-B", code_file],
                     capture_output=True,
                     text=True,
                     timeout=timeout,
                     cwd=tmpdir,
+                    env=env,
+                    preexec_fn=_sandbox_limit(),
                 )
 
                 return ToolOutput(success=True, data={

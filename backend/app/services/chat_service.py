@@ -20,11 +20,56 @@ class ChatService:
         messages = self.conversation_repo.get_messages(conversation_id, limit=50)
         return [{"role": m.role, "content": m.content} for m in messages]
 
-    def _save_user_message(self, conversation_id: str, user_id: int, query: str) -> None:
-        self.conversation_repo.add_message(conversation_id, user_id, "user", query)
+    def _auto_title_conversation(self, conversation_id: str, query: str) -> None:
+        conv = self.conversation_repo.get_by_conversation_id(conversation_id)
+        if not conv or (conv.title or "").strip():
+            return
+        from app.services.conversation_titles import generate_title
+        title = generate_title(query)
+        if title:
+            conv.title = title
+            self.db.commit()
 
-    def _save_assistant_message(self, conversation_id: str, user_id: int, answer: str, run_id: str) -> None:
-        self.conversation_repo.add_message(conversation_id, user_id, "assistant", answer, run_id=run_id)
+    def _save_user_message(self, conversation_id: str, user_id: int, query: str) -> None:
+        attachments = None
+        try:
+            from app.services.chat_attachment_service import get_conversation_attachments
+            existing = get_conversation_attachments(conversation_id)
+            attachments = [
+                {
+                    "attachment_id": a.get("attachment_id"),
+                    "filename": a.get("filename"),
+                    "ext": a.get("ext"),
+                    "file_path": a.get("file_path"),
+                    "size": a.get("size"),
+                    "summary": a.get("summary"),
+                }
+                for a in existing
+            ]
+        except Exception as e:
+            logger.error("chat_attachments_index_failed", error=str(e))
+        self.conversation_repo.add_message(conversation_id, user_id, "user", query, attachments=attachments)
+
+    def _save_assistant_message(
+        self,
+        conversation_id: str,
+        user_id: int,
+        answer: str,
+        run_id: str,
+        sources: Optional[list] = None,
+        artifacts: Optional[list] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        self.conversation_repo.add_message(
+            conversation_id,
+            user_id,
+            "assistant",
+            answer,
+            run_id=run_id,
+            sources=sources or [],
+            artifacts=artifacts or [],
+            metadata=metadata or {},
+        )
 
     async def process_chat(
         self,
@@ -34,9 +79,24 @@ class ChatService:
         conversation_id: str,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         self.conversation_repo.get_or_create_by_conversation_id(conversation_id, company_id, user_id)
+        self._auto_title_conversation(conversation_id, query)
         self._save_user_message(conversation_id, user_id, query)
 
         history = self._load_history(conversation_id)
+
+        attachment_ctx = ""
+        try:
+            from app.services.chat_attachment_service import build_attachment_context
+            attachment_ctx = build_attachment_context(conversation_id, db=self.db)
+        except Exception as e:
+            logger.error("attachment_ctx_failed", error=str(e))
+
+        effective_query = query
+        if attachment_ctx:
+            effective_query = (
+                f"{query}\n\nContext from files you uploaded in this conversation "
+                f"(temporary, chat-scoped; treat as authoritative for this request):\n{attachment_ctx}"
+            )
 
         agent_run = AgentRun(
             run_id=str(uuid.uuid4()),
@@ -51,11 +111,12 @@ class ChatService:
         self.db.refresh(agent_run)
 
         try:
+            verified = None
             async for event in run_agent(
                 self.db,
                 company_id,
                 user_id,
-                query,
+                effective_query,
                 conversation_id,
                 history=history,
             ):
@@ -74,6 +135,9 @@ class ChatService:
                     agent_run.artifacts_generated = artifacts
                     self.db.commit()
 
+                elif event_type == "verification_completed":
+                    verified = event.get("verified")
+
                 yield event
 
             if event_type == "run_completed":
@@ -82,11 +146,28 @@ class ChatService:
                 agent_run.model_used = event.get("model")
                 agent_run.tools_used = event.get("tools_used", [])
                 agent_run.documents_accessed = event.get("documents_accessed", [])
+                artifacts = agent_run.artifacts_generated or []
+                for art in event.get("artifacts", []):
+                    if all(a.get("artifact_id") != art.get("artifact_id") for a in artifacts):
+                        artifacts.append(art)
+                agent_run.artifacts_generated = artifacts
                 self.db.commit()
                 answer = event.get("answer")
                 if answer:
                     try:
-                        self._save_assistant_message(conversation_id, user_id, answer, str(agent_run.run_id))
+                        self._save_assistant_message(
+                            conversation_id,
+                            user_id,
+                            answer,
+                            str(agent_run.run_id),
+                            sources=event.get("evidence", []),
+                            artifacts=event.get("artifacts", []),
+                            metadata={
+                                "model": event.get("model"),
+                                "verified": event.get("verified", verified),
+                                "analysis": event.get("analysis"),
+                            },
+                        )
                     except Exception as msg_err:
                         logger.error("save_assistant_message_failed", error=str(msg_err))
 

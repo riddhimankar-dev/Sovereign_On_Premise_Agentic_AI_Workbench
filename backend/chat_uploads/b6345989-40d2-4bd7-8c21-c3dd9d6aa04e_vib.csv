@@ -1,0 +1,5 @@
+P-102 quarterly vibration readings:
+vibration_mm_s,date,condition
+3.2,2026-08-01,NORMAL
+6.8,2026-08-15,HIGH
+7.5,2026-08-20,CRITICAL

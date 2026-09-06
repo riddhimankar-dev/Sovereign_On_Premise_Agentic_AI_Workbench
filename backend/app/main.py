@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
+from app.core.exceptions import WorkbenchException
 from app.db.database import init_db
-from app.api.routes import health, models, knowledge, chat, documents, assets, projects, tasks, artifacts, approvals, work_orders, security, document_generation, auth
+from app.api.routes import health, models, knowledge, chat, documents, assets, projects, tasks, artifacts, approvals, work_orders, security, document_generation, auth, code
 
 logger = get_logger(__name__)
 
@@ -43,6 +45,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(WorkbenchException)
+async def workbench_exception_handler(request, exc: WorkbenchException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(models.router, prefix="/api")
@@ -57,6 +65,7 @@ app.include_router(approvals.router, prefix="/api")
 app.include_router(work_orders.router, prefix="/api")
 app.include_router(security.router, prefix="/api")
 app.include_router(document_generation.router, prefix="/api")
+app.include_router(code.router, prefix="/api")
 
 if settings.app_env == "development":
     @app.get("/")

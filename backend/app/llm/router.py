@@ -96,6 +96,15 @@ Assistant:"""
                 "reason": "Fallback: default to reasoning model",
             }
 
+    def pick(self, task: str, explicit_model: str = None) -> str:
+        if explicit_model:
+            return explicit_model
+        if task == "coding":
+            return self.coding_model
+        if task == "classification":
+            return self.router_model
+        return self.primary_model
+
     def deterministic_route(self, query: str, explicit_model: str = None) -> Dict[str, Any]:
         if explicit_model:
             return {"task_type": "general", "model": explicit_model, "confidence": 1.0, "reason": "Explicit model selection"}

@@ -107,12 +107,12 @@ export default function Sidebar({ currentView, onNavigate, onProfile }: SidebarP
             </div>
             <span className="text-[9px] text-[#14B8A6] font-medium">● Local Only</span>
           </div>
-          <p className="text-[11px] font-medium text-[#F5F7FA] mb-1.5">NVIDIA RTX A5000</p>
+          <p className="text-[11px] font-medium text-[#F5F7FA] mb-1.5">NVIDIA RTX 4050</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-[3px] bg-[#253248] rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#14B8A6] rounded-full" style={{ width: "76.7%" }}/>
+              <div className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#14B8A6] rounded-full" style={{ width: "100%" }}/>
             </div>
-            <span className="text-[9.5px] font-mono text-[#9AA6B5] flex-none">18.4/24 GB</span>
+            <span className="text-[9.5px] font-mono text-[#9AA6B5] flex-none">6 GB</span>
           </div>
         </div>
       </div>

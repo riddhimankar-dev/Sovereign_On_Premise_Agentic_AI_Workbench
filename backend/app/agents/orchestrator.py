@@ -3,6 +3,7 @@ from app.agents.state import AgentState, AgentPhase
 from app.agents.planner import planner
 from app.agents.executor import executor
 from app.agents.verifier import verifier
+from app.agents.greetings import is_greeting, fast_path_response, greet
 from app.llm.ollama_client import ollama_client
 from app.llm.router import model_router
 from app.core.config import settings
@@ -10,6 +11,7 @@ from app.core.logging import get_logger
 import json
 import uuid
 from datetime import datetime
+from app.db.models import AgentRun, AgentRunStatus
 
 logger = get_logger(__name__)
 
@@ -45,6 +47,17 @@ class AgentOrchestrator:
 
         yield {"event": "run_started", "run_id": run_id, "query": query}
 
+        fast_reply = fast_path_response(query)
+        if fast_reply is None:
+            fast_reply = await greet(query)
+        if fast_reply is not None:
+            state.final_answer = fast_reply["reply"]
+            state.model_used = fast_reply["model"]
+            yield {"event": "router_selected", "model": "fast-path-greeting", "reason": "Social/greeting query"}
+            yield {"event": "plan_created", "steps": ["Respond conversationally"]}
+            yield {"event": "run_completed", "run_id": run_id, "answer": state.final_answer, "evidence": [], "model": "fast-path-greeting", "tools_used": [], "documents_accessed": [], "analysis": {}, "artifacts": []}
+            return
+
         try:
             routing_result = await model_router.route(query)
             selected_model = routing_result.get("model", settings.primary_model)
@@ -52,11 +65,32 @@ class AgentOrchestrator:
 
             yield {"event": "router_selected", "model": selected_model, "reason": routing_result.get("reason")}
 
+            prior_artifacts: List[Dict[str, Any]] = []
+            try:
+                runs = self.db.query(AgentRun).filter(
+                    AgentRun.conversation_id == conversation_id,
+                    AgentRun.status == AgentRunStatus.COMPLETED,
+                ).order_by(AgentRun.started_at.desc()).all()
+                for r in runs:
+                    prior_artifacts.extend(r.artifacts_generated or [])
+            except Exception as e:
+                logger.warning("prior_artifacts_failed", error=str(e))
+            state.context["artifacts"] = prior_artifacts
+
             plan = await planner.create_plan(state)
             yield {"event": "plan_created", "steps": [s.label for s in plan.steps]}
-
             yield {"event": "retrieval_started"}
-            await executor.execute_plan(state, context)
+
+            tool_events: List[Dict[str, Any]] = []
+
+            async def _emit_tool_event(e: Dict[str, Any]) -> None:
+                tool_events.append(e)
+
+            await executor.execute_plan(state, context, on_event=_emit_tool_event)
+
+            for te in tool_events:
+                yield te
+
             yield {"event": "retrieval_completed"}
 
             if state.phase == AgentPhase.FAILED:
@@ -64,6 +98,8 @@ class AgentOrchestrator:
                 return
 
             state.evidence = self._collect_evidence(state)
+            state.analysis = self._collect_analysis(state)
+            state.documents_accessed = self._collect_documents_accessed(state)
 
             answer = await self._synthesize_answer(state, selected_model)
             state.final_answer = answer
@@ -83,6 +119,9 @@ class AgentOrchestrator:
                 "evidence": state.evidence,
                 "model": selected_model,
                 "tools_used": state.tools_used,
+                "documents_accessed": state.documents_accessed,
+                "analysis": state.analysis,
+                "artifacts": state.artifacts_generated,
             }
 
         except Exception as e:
@@ -105,11 +144,39 @@ class AgentOrchestrator:
                         })
         return evidence
 
+    def _collect_analysis(self, state: AgentState) -> Dict[str, Any]:
+        for step in state.plan.steps if state.plan else []:
+            if step.tool == "analyze_data" and step.output_data:
+                return step.output_data.get("analysis") or {}
+        return {}
+
+    def _collect_documents_accessed(self, state: AgentState) -> List[str]:
+        doc_ids: List[str] = []
+        for step in state.plan.steps if state.plan else []:
+            if step.tool == "search_documents":
+                results = step.output_data.get("results", [])
+                for r in results:
+                    doc_id = r.get("document_id")
+                    if doc_id and doc_id not in doc_ids:
+                        doc_ids.append(doc_id)
+        return doc_ids
+
     async def _synthesize_answer(self, state: AgentState, model: str) -> str:
         evidence_text = "\n\n".join([
             f"Source {i+1} ({e.get('document_id', 'Unknown')}, p.{e.get('page', '?')}): {e.get('content', '')[:500]}"
             for i, e in enumerate(state.evidence)
         ])
+
+        artifact_text = ""
+        if state.artifacts_generated:
+            artifact_lines = [
+                f"- '{a.get('name')}' ({a.get('format')}) — download: {a.get('download_url')}"
+                for a in state.artifacts_generated
+            ]
+            artifact_text = (
+                "\n\nA fresh document artifact was generated and persisted for this request. "
+                "Mention it in your answer with its name and download path:\n" + "\n".join(artifact_lines)
+            )
 
         system_prompt = """You are an industrial AI assistant for ApexPetro Energy Limited.
 Answer the user's question using ONLY the provided evidence.
@@ -132,6 +199,7 @@ Show calculations explicitly with units."""
 
 Evidence:
 {evidence_text}
+{artifact_text}
 
 Provide a clear, well-structured answer with citations."""
 

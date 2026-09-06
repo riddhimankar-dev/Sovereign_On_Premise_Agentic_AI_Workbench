@@ -1,8 +1,18 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
+function authHeaders(): Record<string, string> {
+  let token = null;
+  try {
+    token = localStorage.getItem("sovereign_token");
+  } catch {
+    token = null;
+  }
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: { "Content-Type": "application/json", ...authHeaders(), ...options?.headers },
     ...options,
   });
   if (!res.ok) {
@@ -14,7 +24,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 async function fetchStream(url: string, options?: RequestInit): Promise<Response> {
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: { "Content-Type": "application/json", ...authHeaders(), ...options?.headers },
     ...options,
   });
   if (!res.ok) {
@@ -22,6 +32,18 @@ async function fetchStream(url: string, options?: RequestInit): Promise<Response
     throw new Error(`API ${res.status}: ${text}`);
   }
   return res;
+}
+
+async function fetchForm<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: { ...authHeaders(), ...options?.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
 }
 
 export interface LoginRequest {
@@ -53,11 +75,41 @@ export interface ConversationSummary {
   updated_at: string;
 }
 
+export interface ChatSource {
+  source: string;
+  document_id: string;
+  content: string;
+  page: number | null;
+  section: string | null;
+  relevance: number | null;
+}
+
+export interface ChatArtifact {
+  artifact_id: string;
+  name?: string;
+  template?: string;
+  format?: string;
+  download_url?: string;
+  approval_id?: string | null;
+  version?: number;
+  parent_artifact_id?: string | null;
+}
+
+export interface ChatMessageMeta {
+  model?: string | null;
+  verified?: boolean | null;
+  analysis?: any;
+}
+
 export interface MessageRecord {
   message_id: string;
   role: "user" | "assistant";
   content: string;
   run_id: string | null;
+  sources?: ChatSource[];
+  artifacts?: ChatArtifact[];
+  meta?: ChatMessageMeta;
+  attachments?: any[];
   created_at: string;
 }
 
@@ -128,7 +180,16 @@ export interface ChatEvent {
     relevance: number;
   }>;
   tools_used?: string[];
+  documents_accessed?: string[];
+  analysis?: any;
   artifact?: any;
+  artifacts?: Array<{
+    artifact_id: string;
+    name?: string;
+    template?: string;
+    format?: string;
+    download_url?: string;
+  }>;
 }
 
 export interface KnowledgeSearchRequest {
@@ -249,6 +310,9 @@ export interface Artifact {
   status: string;
   classification: string;
   created_by: number;
+  version: number;
+  parent_artifact_id: string | null;
+  preview_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -262,8 +326,14 @@ export interface Approval {
   id: number;
   approval_id: string;
   artifact_id: number;
+  artifact_uuid?: string | null;
+  artifact_name?: string | null;
+  artifact_type?: string | null;
+  download_url?: string | null;
   requested_by: number;
+  requested_by_name?: string | null;
   reviewed_by: number | null;
+  reviewed_by_name?: string | null;
   status: string;
   comments: string | null;
   requested_at: string;
@@ -308,10 +378,35 @@ export interface SecurityStatusResponse {
   overall: "secure" | "degraded" | "warning";
 }
 
+export interface CodeRunResult {
+  stdout: string;
+  stderr: string;
+  return_code: number;
+  execution_ms: number;
+  sandbox: string;
+}
+
 export interface UploadResponse {
   document_id: string;
   file_name: string;
   status: string;
+}
+
+export interface ChatAttachmentResponse {
+  attachment_id: string;
+  filename: string;
+  ext: string;
+  size: number;
+  summary: string;
+  content_excerpt: string;
+}
+
+export interface ArtifactPreview {
+  artifact_id: string;
+  name: string;
+  content?: string;
+  raw?: string;
+  mime?: string;
 }
 
 export interface GenerateDocumentRequest {
@@ -351,6 +446,14 @@ export const api = {
     createConversation: () => fetchJson<ConversationSummary>("/api/chat/conversations", { method: "POST", body: "{}" }),
     listConversations: () => fetchJson<{ conversations: ConversationSummary[]; total: number }>("/api/chat/conversations"),
     getMessages: (conversationId: string) => fetchJson<{ conversation_id: string; messages: MessageRecord[]; total: number }>(`/api/chat/conversations/${conversationId}/messages`),
+    renameConversation: (conversationId: string, title: string) => fetchJson<ConversationSummary>(`/api/chat/conversations/${conversationId}`, { method: "PATCH", body: JSON.stringify({ title }) }),
+    deleteConversation: (conversationId: string) => fetchJson<{ conversation_id: string; deleted: boolean }>(`/api/chat/conversations/${conversationId}`, { method: "DELETE" }),
+    uploadAttachment: (conversationId: string, file: File) => {
+      const form = new FormData();
+      form.append("conversation_id", conversationId);
+      form.append("file", file);
+      return fetchForm<ChatAttachmentResponse>("/api/chat/attachments", { method: "POST", body: form });
+    },
   },
 
   knowledge: {
@@ -372,7 +475,7 @@ export const api = {
       form.append("file", file);
       if (metadata?.classification) form.append("classification", metadata.classification);
       if (metadata?.asset_id) form.append("asset_id", metadata.asset_id);
-      return fetchJson<UploadResponse>("/api/documents/upload", { method: "POST", body: form });
+      return fetchForm<UploadResponse>("/api/documents/upload", { method: "POST", body: form });
     },
     get: (documentId: string) => fetchJson<Document>(`/api/documents/${documentId}`),
     delete: (documentId: string) => fetchJson<{ success: boolean }>(`/api/documents/${documentId}`, { method: "DELETE" }),
@@ -429,6 +532,8 @@ export const api = {
     },
     get: (artifactId: string) => fetchJson<Artifact>(`/api/artifacts/${artifactId}`),
     download: (artifactId: string) => fetch(`${API_BASE}/api/artifacts/${artifactId}/download`),
+    preview: (artifactId: string) => fetchJson<ArtifactPreview>(`/api/artifacts/${artifactId}/preview`),
+    downloadUrl: (artifactId: string) => `${API_BASE}/api/artifacts/${artifactId}/download`,
   },
 
   approvals: {
@@ -440,6 +545,8 @@ export const api = {
       return fetchJson<ApprovalListResponse>(`/api/approvals?${search.toString()}`);
     },
     get: (approvalId: string) => fetchJson<Approval>(`/api/approvals/${approvalId}`),
+    create: (artifactId: string, comments?: string) =>
+      fetchJson<Approval>(`/api/approvals`, { method: "POST", body: JSON.stringify({ artifact_id: artifactId, comments }) }),
     approve: (approvalId: string, comments?: string) => fetchJson<Approval>(`/api/approvals/${approvalId}/approve`, { method: "POST", body: JSON.stringify({ comments }) }),
     reject: (approvalId: string, comments?: string) => fetchJson<Approval>(`/api/approvals/${approvalId}/reject`, { method: "POST", body: JSON.stringify({ comments }) }),
   },
@@ -458,6 +565,11 @@ export const api = {
 
   security: {
     status: () => fetchJson<SecurityStatusResponse>("/api/security/status"),
+  },
+
+  code: {
+    run: (code: string, timeout = 30) =>
+      fetchJson<CodeRunResult>("/api/code/run", { method: "POST", body: JSON.stringify({ code, language: "python", timeout }) }),
   },
 
   documentsGeneration: {

@@ -348,6 +348,35 @@ class ConversationRepository:
             self.db.refresh(conv)
         return conv
 
+    def get_by_conversation_id(self, conversation_id: str) -> Optional[Conversation]:
+        return self.db.query(Conversation).filter(Conversation.conversation_id == conversation_id).first()
+
+    def rename(self, conversation_id: str, title: str) -> Optional[Conversation]:
+        conv = self.get_by_conversation_id(conversation_id)
+        if not conv:
+            return None
+        conv.title = (title or "").strip()[:255]
+        self.db.commit()
+        self.db.refresh(conv)
+        return conv
+
+    def delete(self, conversation_id: str) -> bool:
+        conv = self.get_by_conversation_id(conversation_id)
+        if not conv:
+            return False
+        # Detach artifacts from any agent runs owned by this conversation so the
+        # global Artifacts library stays intact while the run history is removed.
+        from app.db.models import AgentRun, Artifact
+        run_ids = [r.id for r in self.db.query(AgentRun).filter(AgentRun.conversation_id == conversation_id).all()]
+        if run_ids:
+            self.db.query(Artifact).filter(Artifact.agent_run_id.in_(run_ids)).update(
+                {Artifact.agent_run_id: None}, synchronize_session=False
+            )
+            self.db.query(AgentRun).filter(AgentRun.id.in_(run_ids)).delete(synchronize_session=False)
+        self.db.delete(conv)  # cascades to messages
+        self.db.commit()
+        return True
+
     def list_by_user(self, company_id: str, user_id: int, limit: int = 50) -> List[Conversation]:
         return self.db.query(Conversation).filter(
             Conversation.company_id == company_id,
@@ -362,7 +391,18 @@ class ConversationRepository:
             Message.conversation_id == conv.id
         ).order_by(Message.id.asc()).limit(limit).all()
 
-    def add_message(self, conversation_id: str, user_id: int, role: str, content: str, run_id: str = None) -> Message:
+    def add_message(
+        self,
+        conversation_id: str,
+        user_id: int,
+        role: str,
+        content: str,
+        run_id: str = None,
+        sources: list = None,
+        artifacts: list = None,
+        metadata: dict = None,
+        attachments: list = None,
+    ) -> Message:
         import uuid
         conv = self.db.query(Conversation).filter(Conversation.conversation_id == conversation_id).first()
         if not conv:
@@ -374,6 +414,10 @@ class ConversationRepository:
             role=role,
             content=content,
             run_id=run_id,
+            sources=sources or [],
+            artifacts=artifacts or [],
+            meta=metadata or {},
+            attachments=attachments or [],
         )
         self.db.add(msg)
         conv.updated_at = datetime.utcnow()
