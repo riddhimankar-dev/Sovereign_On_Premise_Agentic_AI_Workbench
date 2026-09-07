@@ -560,6 +560,8 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew, onRenam
 
 interface ComposerAttachment {
   name: string;
+  file?: File;
+  attachment_id?: string;
   status: "uploading" | "ready" | "error";
   error?: string;
 }
@@ -782,7 +784,10 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     }
   }, [newChat]);
 
-  async function runQuery(query: string) {
+  async function runQuery(
+  query: string,
+  attachedFiles: ComposerAttachment[] = []
+) {
     setRunning(true);
     setError(null);
     setSteps([]);
@@ -804,7 +809,13 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     scrollToBottom();
 
     try {
-      const res = await api.chat.stream({ query, conversation_id: convId });
+      const res = await api.chat.stream({
+  query,
+  conversation_id: convId,
+  attachment_ids: attachedFiles
+    .filter((a) => a.attachment_id)
+    .map((a) => a.attachment_id as string),
+});
       const planSteps: string[] = [];
       const artifactLinks: ArtifactLink[] = [];
       let runVerified: boolean | null = null;
@@ -859,39 +870,244 @@ export default function ChatScreen({ onOpenModelDrawer }: { onOpenModelDrawer: (
     }
   }
 
-  async function handleAttach(file: File) {
-    const name = file.name;
-    setAttachments((prev) => [...prev, { name, status: "uploading" }]);
-    let convId = activeId;
-    if (!convId) {
-      try {
-        const created = await api.chat.createConversation();
-        convId = created.conversation_id;
-        setActiveId(convId);
-      } catch (e) {
-        setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "error", error: "Failed to start conversation" } : a));
-        return;
-      }
-    }
+async function handleAttach(file: File) {
+  const name = file.name;
+
+  const allowed = [
+    ".csv",
+    ".xlsx",
+    ".xlsm",
+  ];
+
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+
+  if (!allowed.includes(ext)) {
+    setAttachments((prev) => [
+      ...prev,
+      {
+        name,
+        status: "error",
+        error: "Only CSV and Excel files are supported",
+      },
+    ]);
+    return;
+  }
+
+  setAttachments((prev) => [
+    ...prev,
+    {
+      name,
+      status: "uploading",
+    },
+  ]);
+
+  let convId = activeId;
+
+  if (!convId) {
     try {
-      await api.chat.uploadAttachment(convId, file);
-      setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "ready" } : a));
+      const created = await api.chat.createConversation();
+      convId = created.conversation_id;
+      setActiveId(convId);
     } catch (e) {
-      setAttachments((prev) => prev.map((a) => a.name === name ? { name, status: "error", error: "Upload failed" } : a));
+      setAttachments((prev) =>
+        prev.map((a) =>
+          a.name === name
+            ? {
+                name,
+                status: "error",
+                error: "Failed to start conversation",
+              }
+            : a
+        )
+      );
+      return;
     }
   }
+
+  try {
+    const uploaded = await api.chat.uploadAttachment(convId, file);
+
+    setAttachments((prev) =>
+  prev.map((a) =>
+    a.name === name
+      ? {
+          name,
+          file,
+          attachment_id: uploaded.attachment_id,
+          status: "ready",
+        }
+      : a
+  )
+);
+  } catch (e) {
+    setAttachments((prev) =>
+      prev.map((a) =>
+        a.name === name
+          ? {
+              name,
+              status: "error",
+              error:
+                e instanceof Error
+                  ? e.message
+                  : "Upload failed",
+            }
+          : a
+      )
+    );
+  }
+}
+  
 
   function handleRemoveAttachment(name: string) {
     setAttachments((prev) => prev.filter((a) => a.name !== name));
   }
+function detectSpreadsheetOperation(query: string): string | null {
+  const q = query.toLowerCase();
 
-  function handleSend() {
-    const q = message.trim();
-    if (!q || running) return;
-    setMessage("");
-    setAttachments([]);
-    void runQuery(q);
+  if (
+    q.includes("moving average") ||
+    q.includes("moving-average") ||
+    q.includes("rolling average")
+  ) {
+    return "moving_average";
   }
+
+  if (
+    q.includes("trend") ||
+    q.includes("historical change") ||
+    q.includes("period over period") ||
+    q.includes("period-over-period") ||
+    q.includes("change over time")
+  ) {
+    return "trend";
+  }
+
+  if (
+    q.includes("statistics") ||
+    q.includes("statistical") ||
+    q.includes("average") ||
+    q.includes("mean") ||
+    q.includes("median") ||
+    q.includes("minimum") ||
+    q.includes("maximum") ||
+    q.includes("variance") ||
+    q.includes("standard deviation") ||
+    q.includes("percentile")
+  ) {
+    return "statistics";
+  }
+
+  return null;
+}
+
+async function runSpreadsheetCalculation(
+  query: string,
+  attachment: ComposerAttachment
+) {
+  if (!attachment.file) {
+    setError("The attached spreadsheet file is not available.");
+    return;
+  }
+
+  const operation = detectSpreadsheetOperation(query);
+
+  if (!operation) {
+    return runQuery(query, [attachment]);
+  }
+
+  setRunning(true);
+  setError(null);
+  setSteps([]);
+
+  setMessages((prev) => [
+    ...prev,
+    { role: "user", content: query },
+  ]);
+
+  try {
+    setSteps([
+      { label: "Reading spreadsheet", done: true },
+      { label: "Running deterministic calculation", done: false },
+      { label: "Verifying result", done: false },
+    ]);
+
+    const result = await api.calculations.spreadsheet(
+      attachment.file,
+      operation
+    );
+
+    setSteps([
+      { label: "Reading spreadsheet", done: true },
+      { label: "Running deterministic calculation", done: true },
+      { label: "Verifying result", done: true },
+    ]);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          `Spreadsheet calculation completed.\n\n` +
+          `Operation: ${result.operation}\n` +
+          `Result: ${
+            typeof result.result === "object"
+              ? JSON.stringify(result.result, null, 2)
+              : String(result.result)
+          }\n` +
+          `Unit: ${result.unit || "N/A"}\n` +
+          `Formula: ${result.formula || "N/A"}\n` +
+          `Verification: ${result.verification_status}\n` +
+          `Calculation ID: ${result.calculation_id}\n` +
+          `Trace ID: ${result.trace_id}`,
+        verified: result.verification_status === "VERIFIED",
+        analysis: {
+          calculations: [result],
+        },
+      },
+    ]);
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "Spreadsheet calculation failed."
+    );
+  } finally {
+    setRunning(false);
+  }
+}  
+
+
+function handleSend() {
+  const q = message.trim();
+
+  if (!q || running) return;
+
+  const readyAttachments = attachments.filter(
+    (a) => a.status === "ready" && a.attachment_id
+  );
+
+  if (attachments.some((a) => a.status === "uploading")) {
+    setError("Please wait for the file upload to finish.");
+    return;
+  }
+
+  if (attachments.some((a) => a.status === "error")) {
+    setError("Please remove the failed attachment before continuing.");
+    return;
+  }
+
+  setMessage("");
+
+const spreadsheetAttachment = readyAttachments.find(
+  (a) => a.file && /\.(csv|xlsx|xlsm)$/i.test(a.name)
+);
+
+if (spreadsheetAttachment && detectSpreadsheetOperation(q)) {
+  void runSpreadsheetCalculation(q, spreadsheetAttachment);
+} else {
+  void runQuery(q, readyAttachments);
+}
+}
 
   function handleSuggestion(text: string) {
     setMessage("");

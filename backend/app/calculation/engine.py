@@ -1,7 +1,22 @@
 from typing import Any, Dict
 
-from app.calculation.registry import (
-    get_calculation_definition
+from app.calculation.registry import get_calculation_definition
+
+from app.calculation.petroleum import (
+    total_liquid_rate,
+    water_cut,
+    gas_oil_ratio,
+)
+
+from app.calculation.multi_parameter import (
+    analyze_multiple_parameters,
+)
+
+from app.calculation.equipment import (
+    pump_efficiency,
+    mtbf,
+    mttr,
+    equipment_availability,
 )
 
 from app.calculation.formulas import (
@@ -16,23 +31,27 @@ from app.calculation.formulas import (
 )
 
 from app.calculation.statistics import (
-    calculate_statistics
+    calculate_statistics,
 )
 
-from app.calculation.trends import calculate_period_changes
-from app.calculation.trends import moving_average
+from app.calculation.trends import (
+    calculate_period_changes,
+    moving_average,
+)
 
 from app.calculation.units import convert
 
 from app.calculation.rules import (
-    evaluate_pressure
+    evaluate_pressure,
 )
 
 from app.calculation.trace import (
-    create_trace
+    create_trace,
 )
 
-from app.calculation.verification import CalculationVerifier
+from app.calculation.verification import (
+    CalculationVerifier,
+)
 
 
 class CalculationEngine:
@@ -71,6 +90,26 @@ class CalculationEngine:
             )
 
         return float(value)
+
+    # =========================================================
+    # UNIT VALIDATION
+    # =========================================================
+
+    def _require_unit(self, data, name):
+
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"Input '{name}' must be an object"
+            )
+
+        unit = data.get("unit")
+
+        if not unit:
+            raise ValueError(
+                f"Input '{name}' requires a unit"
+            )
+
+        return unit
 
     # =========================================================
     # DATASET VALIDATION
@@ -148,23 +187,63 @@ class CalculationEngine:
                 "Calculation inputs must be an object"
             )
 
-        # -----------------------------------------------------
-        # Normalize input values
-        # -----------------------------------------------------
+        # =====================================================
+        # NORMALIZE INPUTS
+        # =====================================================
+        #
+        # Most calculations use:
+        #
+        # {
+        #     "value": 42,
+        #     "unit": "bar"
+        # }
+        #
+        # But multi_parameter_analysis uses:
+        #
+        # {
+        #     "parameters": [
+        #         {...},
+        #         {...}
+        #     ]
+        # }
+        #
+        # Therefore parameters must bypass normal numeric
+        # validation.
+        # =====================================================
 
         normalized_inputs = {}
 
-        for name, data in inputs.items():
+        if operation == "multi_parameter_analysis":
 
-            value = self._numeric(
-                data,
-                name
-            )
+            if "parameters" not in inputs:
+                raise ValueError(
+                    "Input 'parameters' is required"
+                )
 
-            normalized_inputs[name] = {
-                **data,
-                "value": value,
+            parameters = inputs["parameters"]
+
+            if not isinstance(parameters, list):
+                raise ValueError(
+                    "Input 'parameters' must be a list"
+                )
+
+            normalized_inputs = {
+                "parameters": parameters
             }
+
+        else:
+
+            for name, data in inputs.items():
+
+                value = self._numeric(
+                    data,
+                    name
+                )
+
+                normalized_inputs[name] = {
+                    **data,
+                    "value": value,
+                }
 
         # -----------------------------------------------------
         # Variables
@@ -193,7 +272,7 @@ class CalculationEngine:
 
             result = add(
                 normalized_inputs["a"]["value"],
-                normalized_inputs["b"]["value"]
+                normalized_inputs["b"]["value"],
             )
 
             unit = normalized_inputs["a"].get("unit")
@@ -214,7 +293,7 @@ class CalculationEngine:
 
             result = subtract(
                 normalized_inputs["a"]["value"],
-                normalized_inputs["b"]["value"]
+                normalized_inputs["b"]["value"],
             )
 
             unit = normalized_inputs["a"].get("unit")
@@ -235,7 +314,7 @@ class CalculationEngine:
 
             result = multiply(
                 normalized_inputs["a"]["value"],
-                normalized_inputs["b"]["value"]
+                normalized_inputs["b"]["value"],
             )
 
         # -----------------------------------------------------
@@ -254,7 +333,7 @@ class CalculationEngine:
 
             result = divide(
                 normalized_inputs["a"]["value"],
-                normalized_inputs["b"]["value"]
+                normalized_inputs["b"]["value"],
             )
 
         # -----------------------------------------------------
@@ -273,7 +352,7 @@ class CalculationEngine:
 
             result = ratio(
                 normalized_inputs["a"]["value"],
-                normalized_inputs["b"]["value"]
+                normalized_inputs["b"]["value"],
             )
 
         # =====================================================
@@ -296,22 +375,17 @@ class CalculationEngine:
                 )
 
             actual = normalized_inputs["actual"]
-
             reference = normalized_inputs["reference"]
 
-            actual_unit = actual.get("unit")
+            actual_unit = self._require_unit(
+                actual,
+                "actual"
+            )
 
-            reference_unit = reference.get("unit")
-
-            if not actual_unit:
-                raise ValueError(
-                    "Actual value requires a unit"
-                )
-
-            if not reference_unit:
-                raise ValueError(
-                    "Reference value requires a unit"
-                )
+            reference_unit = self._require_unit(
+                reference,
+                "reference"
+            )
 
             # -------------------------------------------------
             # Convert actual into reference unit
@@ -320,7 +394,7 @@ class CalculationEngine:
             actual_value = convert(
                 actual["value"],
                 actual_unit,
-                reference_unit
+                reference_unit,
             )
 
             normalized_inputs["actual"] = {
@@ -337,7 +411,7 @@ class CalculationEngine:
 
                 result = absolute_deviation(
                     actual_value,
-                    reference["value"]
+                    reference["value"],
                 )
 
                 unit = reference_unit
@@ -350,13 +424,13 @@ class CalculationEngine:
 
                 result = percentage_deviation(
                     actual_value,
-                    reference["value"]
+                    reference["value"],
                 )
 
                 unit = "%"
 
             # -------------------------------------------------
-            # P-102 pressure rule
+            # Pressure rule
             # -------------------------------------------------
 
             if reference_unit == "bar":
@@ -381,31 +455,18 @@ class CalculationEngine:
                     "Input 'current' is required"
                 )
 
-            previous = normalized_inputs[
+            previous = normalized_inputs["previous"]
+            current = normalized_inputs["current"]
+
+            previous_unit = self._require_unit(
+                previous,
                 "previous"
-            ]
+            )
 
-            current = normalized_inputs[
+            current_unit = self._require_unit(
+                current,
                 "current"
-            ]
-
-            previous_unit = previous.get(
-                "unit"
             )
-
-            current_unit = current.get(
-                "unit"
-            )
-
-            if not previous_unit:
-                raise ValueError(
-                    "Previous value requires a unit"
-                )
-
-            if not current_unit:
-                raise ValueError(
-                    "Current value requires a unit"
-                )
 
             # -------------------------------------------------
             # Convert current to previous unit
@@ -414,7 +475,7 @@ class CalculationEngine:
             current_value = convert(
                 current["value"],
                 current_unit,
-                previous_unit
+                previous_unit,
             )
 
             normalized_inputs["current"] = {
@@ -425,10 +486,432 @@ class CalculationEngine:
 
             result = percentage_change(
                 previous["value"],
-                current_value
+                current_value,
             )
 
             unit = "%"
+
+        # =====================================================
+        # PETROLEUM - TOTAL LIQUID RATE
+        # =====================================================
+
+        elif operation == "total_liquid_rate":
+
+            if "oil_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'oil_rate' is required"
+                )
+
+            if "water_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'water_rate' is required"
+                )
+
+            oil = normalized_inputs["oil_rate"]
+            water = normalized_inputs["water_rate"]
+
+            oil_unit = self._require_unit(
+                oil,
+                "oil_rate"
+            )
+
+            water_unit = self._require_unit(
+                water,
+                "water_rate"
+            )
+
+            # -------------------------------------------------
+            # Convert water rate to oil rate unit
+            # -------------------------------------------------
+
+            water_value = convert(
+                water["value"],
+                water_unit,
+                oil_unit,
+            )
+
+            normalized_inputs["water_rate"] = {
+                **water,
+                "normalized_value": water_value,
+                "normalized_unit": oil_unit,
+            }
+
+            calculation = total_liquid_rate(
+                oil["value"],
+                water_value,
+            )
+
+            result = calculation["result"]
+
+            unit = oil_unit
+
+            formula = calculation["formula"]
+
+        # =====================================================
+        # PETROLEUM - WATER CUT
+        # =====================================================
+
+        elif operation == "water_cut":
+
+            if "oil_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'oil_rate' is required"
+                )
+
+            if "water_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'water_rate' is required"
+                )
+
+            oil = normalized_inputs["oil_rate"]
+            water = normalized_inputs["water_rate"]
+
+            oil_unit = self._require_unit(
+                oil,
+                "oil_rate"
+            )
+
+            water_unit = self._require_unit(
+                water,
+                "water_rate"
+            )
+
+            # -------------------------------------------------
+            # Convert water rate to oil rate unit
+            # -------------------------------------------------
+
+            water_value = convert(
+                water["value"],
+                water_unit,
+                oil_unit,
+            )
+
+            normalized_inputs["water_rate"] = {
+                **water,
+                "normalized_value": water_value,
+                "normalized_unit": oil_unit,
+            }
+
+            calculation = water_cut(
+                oil["value"],
+                water_value,
+            )
+
+            result = calculation["result"]
+
+            unit = "%"
+
+            formula = calculation["formula"]
+
+        # =====================================================
+        # PETROLEUM - GAS OIL RATIO
+        # =====================================================
+
+        elif operation == "gas_oil_ratio":
+
+            if "gas_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'gas_rate' is required"
+                )
+
+            if "oil_rate" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'oil_rate' is required"
+                )
+
+            gas = normalized_inputs["gas_rate"]
+            oil = normalized_inputs["oil_rate"]
+
+            gas_unit = self._require_unit(
+                gas,
+                "gas_rate"
+            )
+
+            oil_unit = self._require_unit(
+                oil,
+                "oil_rate"
+            )
+
+            calculation = gas_oil_ratio(
+                gas["value"],
+                oil["value"],
+            )
+
+            result = calculation["result"]
+
+            # -------------------------------------------------
+            # Construct derived GOR unit
+            # -------------------------------------------------
+
+            gas_unit_clean = gas_unit.upper()
+            oil_unit_clean = oil_unit.upper()
+
+            if (
+                gas_unit_clean == "MSCFD"
+                and oil_unit_clean == "BPD"
+            ):
+
+                unit = "MSCF/bbl"
+
+            elif (
+                gas_unit_clean == "SCFD"
+                and oil_unit_clean == "BPD"
+            ):
+
+                unit = "SCF/bbl"
+
+            else:
+
+                unit = f"{gas_unit}/{oil_unit}"
+
+            formula = calculation["formula"]
+
+        # =====================================================
+        # EQUIPMENT - PUMP EFFICIENCY
+        # =====================================================
+
+        elif operation == "pump_efficiency":
+
+            if "hydraulic_power" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'hydraulic_power' is required"
+                )
+
+            if "input_power" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'input_power' is required"
+                )
+
+            hydraulic_power = normalized_inputs[
+                "hydraulic_power"
+            ]["value"]
+
+            input_power = normalized_inputs[
+                "input_power"
+            ]["value"]
+
+            calculation = pump_efficiency(
+                hydraulic_power,
+                input_power,
+            )
+
+            result = calculation["result"]
+
+            formula = calculation["formula"]
+
+            unit = "%"
+
+        # =====================================================
+        # EQUIPMENT - MTBF
+        # =====================================================
+
+        elif operation == "mtbf":
+
+            if "total_operating_time" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'total_operating_time' is required"
+                )
+
+            if "number_of_failures" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'number_of_failures' is required"
+                )
+
+            total_operating_time = normalized_inputs[
+                "total_operating_time"
+            ]["value"]
+
+            number_of_failures = normalized_inputs[
+                "number_of_failures"
+            ]["value"]
+
+            calculation = mtbf(
+                total_operating_time,
+                number_of_failures,
+            )
+
+            result = calculation["result"]
+
+            formula = calculation["formula"]
+
+            unit = context.get(
+                "time_unit",
+                "hours",
+            )
+
+        # =====================================================
+        # EQUIPMENT - MTTR
+        # =====================================================
+
+        elif operation == "mttr":
+
+            if "total_repair_time" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'total_repair_time' is required"
+                )
+
+            if "number_of_repairs" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'number_of_repairs' is required"
+                )
+
+            total_repair_time = normalized_inputs[
+                "total_repair_time"
+            ]["value"]
+
+            number_of_repairs = normalized_inputs[
+                "number_of_repairs"
+            ]["value"]
+
+            calculation = mttr(
+                total_repair_time,
+                number_of_repairs,
+            )
+
+            result = calculation["result"]
+
+            formula = calculation["formula"]
+
+            unit = context.get(
+                "time_unit",
+                "hours",
+            )
+
+        # =====================================================
+        # EQUIPMENT - AVAILABILITY
+        # =====================================================
+
+        elif operation == "equipment_availability":
+
+            if "operating_time" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'operating_time' is required"
+                )
+
+            if "downtime" not in normalized_inputs:
+                raise ValueError(
+                    "Input 'downtime' is required"
+                )
+
+            operating_time = normalized_inputs[
+                "operating_time"
+            ]["value"]
+
+            downtime = normalized_inputs[
+                "downtime"
+            ]["value"]
+
+            calculation = equipment_availability(
+                operating_time,
+                downtime,
+            )
+
+            result = calculation["result"]
+
+            formula = calculation["formula"]
+
+            unit = "%"
+
+        # =====================================================
+        # MULTI-PARAMETER ANALYSIS
+        # =====================================================
+
+        elif operation == "multi_parameter_analysis":
+
+            parameters = inputs.get(
+                "parameters"
+            )
+
+            if not isinstance(parameters, list):
+                raise ValueError(
+                    "multi_parameter_analysis requires "
+                    "'parameters' as a list."
+                )
+
+            if len(parameters) == 0:
+                raise ValueError(
+                    "multi_parameter_analysis requires "
+                    "at least one parameter."
+                )
+
+            # -------------------------------------------------
+            # Validate parameter records
+            # -------------------------------------------------
+
+            for index, parameter in enumerate(parameters):
+
+                if not isinstance(parameter, dict):
+                    raise ValueError(
+                        f"Parameter {index} must be an object."
+                    )
+
+                if "name" not in parameter:
+                    raise ValueError(
+                        f"Parameter {index} is missing 'name'."
+                    )
+
+                if "actual" not in parameter:
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"is missing 'actual'."
+                    )
+
+                if "limit" not in parameter:
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"is missing 'limit'."
+                    )
+
+                if "unit" not in parameter:
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"is missing 'unit'."
+                    )
+
+                actual = parameter["actual"]
+                limit = parameter["limit"]
+
+                if isinstance(actual, bool) or not isinstance(
+                    actual,
+                    (int, float),
+                ):
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"actual value must be numeric."
+                    )
+
+                if isinstance(limit, bool) or not isinstance(
+                    limit,
+                    (int, float),
+                ):
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"limit value must be numeric."
+                    )
+
+                if float(limit) == 0:
+                    raise ValueError(
+                        f"Parameter '{parameter.get('name')}' "
+                        f"limit cannot be zero."
+                    )
+
+            # -------------------------------------------------
+            # Perform deterministic analysis
+            # -------------------------------------------------
+
+            analysis = analyze_multiple_parameters(
+                parameters
+            )
+
+            result = analysis
+
+            formula = (
+                "deviation = actual - limit; "
+                "deviation_percentage = "
+                "((actual - limit) / limit) × 100"
+            )
+
+            unit = None
 
         # =====================================================
         # STATISTICS
@@ -445,6 +928,7 @@ class CalculationEngine:
             )
 
             if dataset:
+
                 unit = dataset[0].get(
                     "unit"
                 )
@@ -468,6 +952,7 @@ class CalculationEngine:
             ]
 
             if dataset:
+
                 unit = dataset[0].get(
                     "unit"
                 )
@@ -491,6 +976,7 @@ class CalculationEngine:
             ]
 
             if dataset:
+
                 unit = dataset[0].get(
                     "unit"
                 )
@@ -511,12 +997,16 @@ class CalculationEngine:
                     "Time-series dataset must be a list"
                 )
 
+            # -------------------------------------------------
             # Validate every row
+            # -------------------------------------------------
+
             for index, row in enumerate(dataset):
 
                 if not isinstance(row, dict):
                     raise ValueError(
-                        f"Time-series row {index} must be an object"
+                        f"Time-series row {index} "
+                        f"must be an object"
                     )
 
                 if "period" not in row:
@@ -539,7 +1029,7 @@ class CalculationEngine:
 
                 if not isinstance(
                     row["value"],
-                    (int, float)
+                    (int, float),
                 ):
                     raise ValueError(
                         f"Time-series row {index} "
@@ -548,14 +1038,13 @@ class CalculationEngine:
 
             result = {
                 "series": dataset,
-
-                "changes":
-                    calculate_period_changes(
-                        dataset
-                    ),
+                "changes": calculate_period_changes(
+                    dataset
+                ),
             }
 
             if dataset:
+
                 unit = dataset[0].get(
                     "unit"
                 )
@@ -583,8 +1072,7 @@ class CalculationEngine:
 
             if window <= 0:
                 raise ValueError(
-                    "Moving average window "
-                    "must be positive"
+                    "Moving average window must be positive"
                 )
 
             if len(values) < window:
@@ -595,10 +1083,11 @@ class CalculationEngine:
 
             result = moving_average(
                 values,
-                window
+                window,
             )
 
             if dataset:
+
                 unit = dataset[0].get(
                     "unit"
                 )
@@ -634,14 +1123,23 @@ class CalculationEngine:
         # RULE STATUS
         # =====================================================
 
-        status = "NORMAL"
+        if operation == "multi_parameter_analysis":
 
-        if rule:
-
-            status = rule.get(
-                "status",
-                "NORMAL"
+            status = result.get(
+                "overall_status",
+                "NORMAL",
             )
+
+        else:
+
+            status = "NORMAL"
+
+            if rule:
+
+                status = rule.get(
+                    "status",
+                    "NORMAL",
+                )
 
         # =====================================================
         # CALCULATION TRACE
@@ -657,7 +1155,7 @@ class CalculationEngine:
             verification_status=verification_status,
         )
 
-        # Add calculation context to trace
+        # Add calculation context
         trace["context"] = context
 
         # Add engine version

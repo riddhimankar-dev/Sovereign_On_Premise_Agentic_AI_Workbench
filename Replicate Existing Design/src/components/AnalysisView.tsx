@@ -31,6 +31,27 @@ interface RecItem {
   rationale?: string;
 }
 
+interface MultiParameterItem {
+  parameter?: string;
+  name?: string;
+  actual?: number;
+  limit?: number;
+  deviation?: number;
+  deviation_percent?: number;
+  deviation_percentage?: number;
+  unit?: string;
+  status?: string;
+  formula?: string;
+  source?: string;
+  source_ref?: string;
+}
+
+interface MultiParameterResult {
+  parameter_count?: number;
+  overall_status?: string;
+  parameters?: MultiParameterItem[];
+}
+
 interface CalculationItem {
   calculation_id?: string;
   trace_id?: string;
@@ -39,6 +60,7 @@ interface CalculationItem {
   unit?: string | null;
   formula?: string | null;
   verification_status?: string;
+  status?: string;
 }
 
 export interface AnalysisEnvelope {
@@ -54,11 +76,20 @@ export interface AnalysisEnvelope {
 function statusColor(status?: string) {
   switch ((status || "").toUpperCase()) {
     case "CRITICAL":
+    case "IMMEDIATE_ESCALATION":
       return "bg-red-500/15 text-red-400 border-red-500/30";
+
+    case "HIGH_CONCERN":
+      return "bg-orange-500/15 text-orange-400 border-orange-500/30";
+
     case "WARNING":
+    case "MONITORING":
+    case "ENGINEERING_REVIEW":
       return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+
     case "NORMAL":
       return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+
     default:
       return "bg-[#253248] text-[#9AA6B5] border-[#253248]";
   }
@@ -128,6 +159,254 @@ function ChartCard({ chart }: { chart: ChartData }) {
   );
 }
 
+function isMultiParameterResult(
+  result: unknown
+): result is MultiParameterResult {
+  if (!result || typeof result !== "object") return false;
+
+  const value = result as MultiParameterResult;
+
+  return Array.isArray(value.parameters);
+}
+
+
+function formatNumber(value: unknown, digits = 2): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "—";
+  }
+
+  return value.toFixed(digits);
+}
+
+
+function parameterStatusClass(status?: string): string {
+  return statusColor(status);
+}
+
+
+function MultiParameterAnalysisCard({
+  calculation,
+}: {
+  calculation: CalculationItem;
+}) {
+  if (!isMultiParameterResult(calculation.result)) {
+    return null;
+  }
+
+  const result = calculation.result;
+  const parameters = result.parameters || [];
+  const overallStatus = result.overall_status || calculation.status || "NORMAL";
+
+  return (
+    <div className="rounded-[10px] bg-[#141E2F] border border-[#253248] overflow-hidden">
+      
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-[#253248] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-[7px] bg-[#8B5CF6]/12 flex items-center justify-center">
+          <TableIcon size={14} className="text-[#8B5CF6]" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-[12.5px] font-semibold text-[#F5F7FA]">
+            Multi-Parameter Engineering Analysis
+          </p>
+
+          <p className="text-[10px] text-[#667386] mt-0.5">
+            {result.parameter_count ?? parameters.length} engineering parameter
+            {(result.parameter_count ?? parameters.length) === 1 ? "" : "s"} analyzed
+          </p>
+        </div>
+
+        <span
+          className={`text-[9px] font-semibold px-2 py-1 rounded border ${statusColor(
+            overallStatus
+          )}`}
+        >
+          {overallStatus.replace(/_/g, " ")}
+        </span>
+      </div>
+
+      {/* Parameter table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-[#253248] bg-[#0F1726]">
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Parameter
+              </th>
+
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Actual
+              </th>
+
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Limit
+              </th>
+
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Deviation
+              </th>
+
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Dev. %
+              </th>
+
+              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#667386]">
+                Status
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {parameters.map((parameter, index) => {
+              const parameterName =
+                parameter.parameter ||
+                parameter.name ||
+                `Parameter ${index + 1}`;
+
+              const deviationPercent =
+                parameter.deviation_percent ??
+                parameter.deviation_percentage;
+
+              return (
+                <tr
+                  key={`${parameterName}-${index}`}
+                  className="border-b border-[#253248]/70 last:border-b-0 hover:bg-[#182337] transition-colors"
+                >
+                  {/* Parameter */}
+                  <td className="px-3 py-3">
+                    <p className="text-[11.5px] font-medium text-[#F5F7FA]">
+                      {parameterName}
+                    </p>
+
+                    {parameter.source && (
+                      <p className="text-[9px] text-[#667386] mt-0.5 truncate max-w-[180px]">
+                        {parameter.source}
+                      </p>
+                    )}
+                  </td>
+
+                  {/* Actual */}
+                  <td className="px-3 py-3">
+                    <span className="text-[11.5px] font-semibold text-[#F5F7FA]">
+                      {formatNumber(parameter.actual)}
+                    </span>
+
+                    {parameter.unit && (
+                      <span className="text-[9px] text-[#667386] ml-1">
+                        {parameter.unit}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Limit */}
+                  <td className="px-3 py-3">
+                    <span className="text-[11.5px] text-[#9AA6B5]">
+                      {formatNumber(parameter.limit)}
+                    </span>
+
+                    {parameter.unit && (
+                      <span className="text-[9px] text-[#667386] ml-1">
+                        {parameter.unit}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Deviation */}
+                  <td className="px-3 py-3">
+                    <span
+                      className={`text-[11.5px] font-semibold ${
+                        typeof parameter.deviation === "number" &&
+                        parameter.deviation > 0
+                          ? "text-[#F59E0B]"
+                          : "text-[#9AA6B5]"
+                      }`}
+                    >
+                      {typeof parameter.deviation === "number" &&
+                      parameter.deviation > 0
+                        ? "+"
+                        : ""}
+                      {formatNumber(parameter.deviation)}
+                    </span>
+
+                    {parameter.unit && (
+                      <span className="text-[9px] text-[#667386] ml-1">
+                        {parameter.unit}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Deviation percentage */}
+                  <td className="px-3 py-3">
+                    <span
+                      className={`text-[11.5px] font-semibold ${
+                        typeof deviationPercent === "number" &&
+                        deviationPercent > 0
+                          ? "text-[#F59E0B]"
+                          : "text-[#9AA6B5]"
+                      }`}
+                    >
+                      {typeof deviationPercent === "number" &&
+                      deviationPercent > 0
+                        ? "+"
+                        : ""}
+                      {formatNumber(deviationPercent)}%
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-3 py-3">
+                    <span
+                      className={`inline-flex whitespace-nowrap text-[9px] font-semibold px-1.5 py-1 rounded border ${parameterStatusClass(
+                        parameter.status
+                      )}`}
+                    >
+                      {(parameter.status || "NORMAL").replace(/_/g, " ")}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Formula + trace */}
+      <div className="px-4 py-3 border-t border-[#253248] bg-[#0F1726] space-y-1.5">
+        {calculation.formula && (
+          <p className="text-[9.5px] text-[#9AA6B5] font-mono">
+            Formula: {calculation.formula}
+          </p>
+        )}
+
+        {calculation.calculation_id && (
+          <p className="text-[9px] text-[#667386] font-mono">
+            Calculation ID: {calculation.calculation_id}
+          </p>
+        )}
+
+        {calculation.trace_id && (
+          <p className="text-[9px] text-[#667386] font-mono">
+            Trace ID: {calculation.trace_id}
+          </p>
+        )}
+
+        <div className="flex items-center gap-1.5 pt-1">
+          <CheckCircle2 size={11} className="text-[#22C55E]" />
+
+          <span className="text-[9px] font-semibold text-[#22C55E]">
+            {calculation.verification_status || "VERIFIED"}
+          </span>
+
+          <span className="text-[9px] text-[#667386]">
+            · Deterministic Calculation Engine
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalysisView({ analysis }: { analysis: AnalysisEnvelope }) {
   const findings = analysis.findings || [];
   const metrics = analysis.metrics || [];
@@ -167,28 +446,76 @@ export default function AnalysisView({ analysis }: { analysis: AnalysisEnvelope 
         )}
 
         {calculations.length > 0 && (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#667386] mb-2">Deterministic Calculations</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {calculations.map((calculation, index) => (
-                <div key={calculation.calculation_id || index} className="rounded-[8px] bg-[#141E2F] border border-[#253248] px-3 py-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] text-[#667386] uppercase">{calculation.operation || "calculation"}</p>
-                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${statusColor(calculation.verification_status === "VERIFIED" ? "NORMAL" : "WARNING")}`}>
-                      {calculation.verification_status || "PENDING"}
-                    </span>
-                  </div>
-                  <p className="text-[18px] font-semibold text-[#F5F7FA] mt-1">
-                    {typeof calculation.result === "object" ? JSON.stringify(calculation.result) : String(calculation.result ?? "-")}
-                    {calculation.unit ? <span className="text-[10px] text-[#667386] ml-1">{calculation.unit}</span> : null}
-                  </p>
-                  {calculation.formula && <p className="text-[10px] text-[#9AA6B5] mt-1 font-mono">{calculation.formula}</p>}
-                  {calculation.trace_id && <p className="text-[9px] text-[#667386] mt-1 font-mono">Trace {calculation.trace_id}</p>}
-                </div>
-              ))}
+  <div>
+    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#667386] mb-2">
+      Deterministic Calculations
+    </p>
+
+    <div className="space-y-3">
+      {calculations.map((calculation, index) => {
+        const isMultiParameter =
+          calculation.operation === "multi_parameter_analysis" &&
+          isMultiParameterResult(calculation.result);
+
+        if (isMultiParameter) {
+          return (
+            <MultiParameterAnalysisCard
+              key={calculation.calculation_id || index}
+              calculation={calculation}
+            />
+          );
+        }
+
+        return (
+          <div
+            key={calculation.calculation_id || index}
+            className="rounded-[8px] bg-[#141E2F] border border-[#253248] px-3 py-2.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] text-[#667386] uppercase">
+                {calculation.operation || "calculation"}
+              </p>
+
+              <span
+                className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${statusColor(
+                  calculation.verification_status === "VERIFIED"
+                    ? "NORMAL"
+                    : "WARNING"
+                )}`}
+              >
+                {calculation.verification_status || "PENDING"}
+              </span>
             </div>
+
+            <p className="text-[18px] font-semibold text-[#F5F7FA] mt-1">
+              {typeof calculation.result === "object"
+                ? JSON.stringify(calculation.result)
+                : String(calculation.result ?? "-")}
+
+              {calculation.unit ? (
+                <span className="text-[10px] text-[#667386] ml-1">
+                  {calculation.unit}
+                </span>
+              ) : null}
+            </p>
+
+            {calculation.formula && (
+              <p className="text-[10px] text-[#9AA6B5] mt-1 font-mono">
+                {calculation.formula}
+              </p>
+            )}
+
+            {calculation.trace_id && (
+              <p className="text-[9px] text-[#667386] mt-1 font-mono">
+                Trace {calculation.trace_id}
+              </p>
+            )}
           </div>
-        )}
+        );
+      })}
+    </div>
+  </div>
+)}
 
         {charts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

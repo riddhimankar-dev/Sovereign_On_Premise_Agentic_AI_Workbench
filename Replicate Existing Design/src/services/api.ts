@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 function authHeaders(): Record<string, string> {
   let token = null;
@@ -160,8 +160,8 @@ export interface ChatRequest {
   query: string;
   conversation_id?: string;
   model?: string;
+  attachment_ids?: string[];
 }
-
 export interface ChatEvent {
   event: string;
   run_id?: string;
@@ -484,6 +484,48 @@ export const api = {
 
   calculations: {
     execute: (request: CalculationRequest) => fetchJson<CalculationResult>("/api/calculations/execute", { method: "POST", body: JSON.stringify(request) }),
+    spreadsheet: (
+  file: File,
+  operation: string,
+  options?: {
+    value_column?: string;
+    unit_column?: string;
+    period_column?: string;
+    sheet_name?: string;
+  }
+) => {
+  const form = new FormData();
+
+  form.append("file", file);
+  form.append("operation", operation);
+
+  form.append(
+    "value_column",
+    options?.value_column || "value"
+  );
+
+  form.append(
+    "unit_column",
+    options?.unit_column || "unit"
+  );
+
+  form.append(
+    "period_column",
+    options?.period_column || "period"
+  );
+
+  if (options?.sheet_name) {
+    form.append("sheet_name", options.sheet_name);
+  }
+
+  return fetchForm<CalculationResult>(
+    "/api/calculations/spreadsheet",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+},
     list: (limit = 50) => fetchJson<{ calculations: CalculationResult[]; total: number }>(`/api/calculations?limit=${limit}`),
     get: (calculationId: string) => fetchJson<CalculationResult>(`/api/calculations/${calculationId}`),
     trace: (calculationId: string) => fetchJson<Record<string, unknown>>(`/api/calculations/${calculationId}/trace`),

@@ -39,7 +39,32 @@ IMPORTANT CALCULATION RULES:
 9. The LLM must not override a Calculation Engine result.
 10. Historical trends must not automatically be treated as forecasts.
 
-Calculation examples:
+Petroleum calculation examples:
+
+- "Calculate water cut for oil rate 800 BPD and water rate 200 BPD"
+  -> call calculate with water_cut
+
+- "Calculate total liquid rate for oil rate 800 BPD and water rate 200 BPD"
+  -> call calculate with total_liquid_rate
+
+- "Calculate GOR for gas rate 5000 SCF/day and oil rate 1000 BPD"
+  -> call calculate with gas_oil_ratio
+
+Equipment calculation examples:
+
+- "Calculate pump efficiency"
+  -> call calculate with pump_efficiency
+
+- "Calculate MTBF"
+  -> call calculate with mtbf
+
+- "Calculate MTTR"
+  -> call calculate with mttr
+
+- "Calculate equipment availability"
+  -> call calculate with equipment_availability
+
+Other calculation examples:
 
 - "Calculate how far P-102 is above its limit"
   -> retrieve actual pressure and approved pressure limit
@@ -132,10 +157,20 @@ class Planner:
         "percentile",
         "ratio",
         "total",
-        "sum",
         "trend",
         "moving average",
         "change",
+        "water cut",
+        "watercut",
+        "total liquid rate",
+        "total liquid",
+        "gas oil ratio",
+        "gas-oil ratio",
+        "gor",
+        "pump efficiency",
+        "mtbf",
+        "mttr",
+        "equipment availability",
         "above the limit",
         "below the limit",
         "operating limit",
@@ -345,6 +380,81 @@ class Planner:
         return None
 
     # ========================================================
+    # NUMBER EXTRACTION
+    # ========================================================
+
+    def _extract_rate(
+        self,
+        query_lower: str,
+        keywords: List[str]
+    ) -> Optional[float]:
+
+        """
+        Extract a numerical value associated with one of the
+        supplied keywords.
+
+        Examples:
+
+        oil rate 800 BPD
+        oil 800 BPD
+        water rate = 200 BPD
+        gas rate 5000 SCF/day
+        """
+
+        keyword_pattern = "|".join(
+            re.escape(keyword)
+            for keyword in keywords
+        )
+
+        pattern = re.compile(
+            rf"(?:{keyword_pattern})"
+            rf"\s*(?:rate)?"
+            rf"\s*(?:is|=|of|:)?"
+            rf"\s*(-?\d+(?:\.\d+)?)",
+            re.IGNORECASE
+        )
+
+        match = pattern.search(query_lower)
+
+        if match:
+            try:
+                return float(match.group(1))
+            except (TypeError, ValueError):
+                return None
+
+        return None
+
+    # ========================================================
+    # UNIT EXTRACTION
+    # ========================================================
+
+    def _extract_unit(
+        self,
+        query_lower: str,
+        default: str
+    ) -> str:
+
+        if "bpd" in query_lower:
+            return "BPD"
+
+        if "m3/day" in query_lower:
+            return "m3/day"
+
+        if "m³/day" in query_lower:
+            return "m³/day"
+
+        if "mmscf" in query_lower:
+            return "MMSCF"
+
+        if "mscf" in query_lower:
+            return "MSCF"
+
+        if "scf" in query_lower:
+            return "SCF"
+
+        return default
+
+    # ========================================================
     # DETECT CALCULATION TYPE
     # ========================================================
 
@@ -352,6 +462,46 @@ class Planner:
         self,
         query_lower: str
     ) -> str:
+
+        # ----------------------------------------------------
+        # Petroleum production calculations
+        # ----------------------------------------------------
+
+        if (
+            "water cut" in query_lower
+            or "watercut" in query_lower
+        ):
+            return "water_cut"
+
+        if (
+            "total liquid rate" in query_lower
+            or "total liquid" in query_lower
+            or "liquid rate" in query_lower
+        ):
+            return "total_liquid_rate"
+
+        if (
+            "gas oil ratio" in query_lower
+            or "gas-oil ratio" in query_lower
+            or re.search(r"\bgor\b", query_lower)
+        ):
+            return "gas_oil_ratio"
+
+        # ----------------------------------------------------
+        # Equipment performance calculations
+        # ----------------------------------------------------
+
+        if "pump efficiency" in query_lower:
+            return "pump_efficiency"
+
+        if re.search(r"\bmtbf\b", query_lower):
+            return "mtbf"
+
+        if re.search(r"\bmttr\b", query_lower):
+            return "mttr"
+
+        if "equipment availability" in query_lower:
+            return "equipment_availability"
 
         # ----------------------------------------------------
         # Percentage deviation
@@ -449,30 +599,439 @@ class Planner:
         """
         Create a structured calculation step.
 
-        IMPORTANT:
-        The planner does not perform arithmetic.
+        The planner identifies the calculation operation and
+        prepares structured inputs.
 
-        The actual numerical values should come from
-        retrieval/document analysis/RAG context.
-
-        For the P-102 prototype, the known demonstration
-        values are used as fallback inputs. These should
-        eventually be replaced by retrieved evidence.
+        Numerical arithmetic itself is NEVER performed here.
+        The Calculation Engine performs the deterministic
+        calculation.
         """
 
         query_lower = state.query.lower()
 
-        # ----------------------------------------------------
-        # P-102 demonstration values
-        #
-        # These are the values specified in the Calculation
-        # Engine specification:
-        #
-        # Actual pressure = 42 bar
-        # Maximum operating pressure = 40 bar
-        # ----------------------------------------------------
+        # ====================================================
+        # PETROLEUM: WATER CUT
+        # ====================================================
+
+        if operation == "water_cut":
+
+            oil_rate = self._extract_rate(
+                query_lower,
+                ["oil rate", "oil"]
+            )
+
+            water_rate = self._extract_rate(
+                query_lower,
+                ["water rate", "water"]
+            )
+
+            unit = self._extract_unit(
+                query_lower,
+                "BPD"
+            )
+
+            # If both values are explicitly present, use them.
+            if oil_rate is not None and water_rate is not None:
+
+                return AgentStepModel(
+                    label="Calculate water cut using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "water_cut",
+                        "inputs": {
+                            "oil_rate": {
+                                "value": oil_rate,
+                                "unit": unit,
+                                "source": "User-provided input"
+                            },
+                            "water_rate": {
+                                "value": water_rate,
+                                "unit": unit,
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "water_cut",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            # Missing values must NOT be invented.
+            return AgentStepModel(
+                label="Retrieve missing petroleum production inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # PETROLEUM: TOTAL LIQUID RATE
+        # ====================================================
+
+        if operation == "total_liquid_rate":
+
+            oil_rate = self._extract_rate(
+                query_lower,
+                ["oil rate", "oil"]
+            )
+
+            water_rate = self._extract_rate(
+                query_lower,
+                ["water rate", "water"]
+            )
+
+            unit = self._extract_unit(
+                query_lower,
+                "BPD"
+            )
+
+            if oil_rate is not None and water_rate is not None:
+
+                return AgentStepModel(
+                    label="Calculate total liquid rate using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "total_liquid_rate",
+                        "inputs": {
+                            "oil_rate": {
+                                "value": oil_rate,
+                                "unit": unit,
+                                "source": "User-provided input"
+                            },
+                            "water_rate": {
+                                "value": water_rate,
+                                "unit": unit,
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "total_liquid_rate",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing petroleum production inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # PETROLEUM: GAS-OIL RATIO
+        # ====================================================
+
+        if operation == "gas_oil_ratio":
+
+            gas_rate = self._extract_rate(
+                query_lower,
+                ["gas rate", "gas"]
+            )
+
+            oil_rate = self._extract_rate(
+                query_lower,
+                ["oil rate", "oil"]
+            )
+
+            gas_unit = self._extract_unit(
+                query_lower,
+                "SCF"
+            )
+
+            oil_unit = "BPD"
+
+            if gas_rate is not None and oil_rate is not None:
+
+                return AgentStepModel(
+                    label="Calculate gas-oil ratio using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "gas_oil_ratio",
+                        "inputs": {
+                            "gas_rate": {
+                                "value": gas_rate,
+                                "unit": gas_unit,
+                                "source": "User-provided input"
+                            },
+                            "oil_rate": {
+                                "value": oil_rate,
+                                "unit": oil_unit,
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "gas_oil_ratio",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing petroleum production inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # EQUIPMENT: PUMP EFFICIENCY
+        # ====================================================
+
+        if operation == "pump_efficiency":
+
+            hydraulic_power = self._extract_rate(
+                query_lower,
+                [
+                    "hydraulic power",
+                    "hydraulic"
+                ]
+            )
+
+            input_power = self._extract_rate(
+                query_lower,
+                [
+                    "input power",
+                    "input"
+                ]
+            )
+
+            if (
+                hydraulic_power is not None
+                and input_power is not None
+            ):
+
+                return AgentStepModel(
+                    label="Calculate pump efficiency using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "pump_efficiency",
+                        "inputs": {
+                            "hydraulic_power": {
+                                "value": hydraulic_power,
+                                "unit": "kW",
+                                "source": "User-provided input"
+                            },
+                            "input_power": {
+                                "value": input_power,
+                                "unit": "kW",
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "pump_efficiency",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing pump efficiency inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # EQUIPMENT: MTBF
+        # ====================================================
+
+        if operation == "mtbf":
+
+            operating_time = self._extract_rate(
+                query_lower,
+                [
+                    "total operating time",
+                    "operating time",
+                    "operating hours"
+                ]
+            )
+
+            failures = self._extract_rate(
+                query_lower,
+                [
+                    "number of failures",
+                    "failures"
+                ]
+            )
+
+            if (
+                operating_time is not None
+                and failures is not None
+            ):
+
+                return AgentStepModel(
+                    label="Calculate MTBF using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "mtbf",
+                        "inputs": {
+                            "total_operating_time": {
+                                "value": operating_time,
+                                "unit": "hours",
+                                "source": "User-provided input"
+                            },
+                            "number_of_failures": {
+                                "value": failures,
+                                "unit": "count",
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "mtbf",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing MTBF inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # EQUIPMENT: MTTR
+        # ====================================================
+
+        if operation == "mttr":
+
+            repair_time = self._extract_rate(
+                query_lower,
+                [
+                    "total repair time",
+                    "repair time",
+                    "repair hours"
+                ]
+            )
+
+            repairs = self._extract_rate(
+                query_lower,
+                [
+                    "number of repairs",
+                    "repairs"
+                ]
+            )
+
+            if (
+                repair_time is not None
+                and repairs is not None
+            ):
+
+                return AgentStepModel(
+                    label="Calculate MTTR using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "mttr",
+                        "inputs": {
+                            "total_repair_time": {
+                                "value": repair_time,
+                                "unit": "hours",
+                                "source": "User-provided input"
+                            },
+                            "number_of_repairs": {
+                                "value": repairs,
+                                "unit": "count",
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "mttr",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing MTTR inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # EQUIPMENT: AVAILABILITY
+        # ====================================================
+
+        if operation == "equipment_availability":
+
+            operating_time = self._extract_rate(
+                query_lower,
+                [
+                    "operating time",
+                    "operating hours"
+                ]
+            )
+
+            downtime = self._extract_rate(
+                query_lower,
+                [
+                    "downtime",
+                    "down time"
+                ]
+            )
+
+            if (
+                operating_time is not None
+                and downtime is not None
+            ):
+
+                return AgentStepModel(
+                    label="Calculate equipment availability using Calculation Engine",
+                    tool="calculate",
+                    input_data={
+                        "operation": "equipment_availability",
+                        "inputs": {
+                            "operating_time": {
+                                "value": operating_time,
+                                "unit": "hours",
+                                "source": "User-provided input"
+                            },
+                            "downtime": {
+                                "value": downtime,
+                                "unit": "hours",
+                                "source": "User-provided input"
+                            }
+                        },
+                        "context": {
+                            "parameter": "equipment_availability",
+                            "source_type": "user_input"
+                        }
+                    }
+                )
+
+            return AgentStepModel(
+                label="Retrieve missing equipment availability inputs",
+                tool="search_documents",
+                input_data={
+                    "query": state.query,
+                    "limit": 10,
+                }
+            )
+
+        # ====================================================
+        # P-102 DEMONSTRATION / ENGINEERING CALCULATIONS
+        # ====================================================
 
         if "p-102" in query_lower or "pressure" in query_lower:
+
+            # ------------------------------------------------
+            # Percentage change
+            # ------------------------------------------------
 
             if operation == "percentage_change":
 
@@ -500,6 +1059,10 @@ class Planner:
                         }
                     }
                 )
+
+            # ------------------------------------------------
+            # Trend
+            # ------------------------------------------------
 
             if operation == "trend":
 
@@ -637,13 +1200,9 @@ class Planner:
                 }
             )
 
-        # ----------------------------------------------------
-        # Generic calculation request
-        #
-        # IMPORTANT:
-        # Don't invent values for generic calculations.
-        # Let retrieval/agent flow provide the values.
-        # ----------------------------------------------------
+        # ====================================================
+        # GENERIC CALCULATION
+        # ====================================================
 
         return AgentStepModel(
             label=f"Execute {operation} using Calculation Engine",
@@ -819,6 +1378,10 @@ class Planner:
                     },
                 )
             )
+
+            # -----------------------------------------------
+            # Structured analysis when requested
+            # -----------------------------------------------
 
             if wants_analysis:
                 steps.append(

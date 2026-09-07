@@ -430,10 +430,81 @@ def load_spreadsheet(
 
     engine = SpreadsheetEngine()
 
-    return engine.read(
+    extension = os.path.splitext(file_path)[1].lower()
+
+    # CSV does not use sheet_name
+    if extension == ".csv":
+        return engine.read_csv(
+            file_path=file_path,
+            value_column=value_column,
+            unit_column=unit_column,
+            period_column=period_column,
+        )
+
+    # Excel can use sheet_name
+    if extension in (".xlsx", ".xlsm"):
+        return engine.read_excel(
+            file_path=file_path,
+            value_column=value_column,
+            unit_column=unit_column,
+            period_column=period_column,
+            sheet_name=sheet_name,
+        )
+
+    raise ValueError(
+        f"Unsupported spreadsheet format: {extension}"
+    )
+# =============================================================
+# CALCULATION DATASET HELPER
+# =============================================================
+
+def spreadsheet_to_dataset(
+    file_path: str,
+    value_column: str = None,
+    unit_column: str = None,
+    period_column: str = None,
+    sheet_name: str = None,
+) -> Dict[str, Any]:
+    """
+    Load CSV/XLSX data and prepare it for the Calculation Engine.
+
+    The returned dataset keeps:
+    - period
+    - value
+    - unit
+    - source reference
+
+    No calculation is performed here.
+    """
+
+    loaded = load_spreadsheet(
         file_path=file_path,
         value_column=value_column,
         unit_column=unit_column,
         period_column=period_column,
         sheet_name=sheet_name,
     )
+
+    dataset = []
+
+    for row in loaded["dataset"]:
+        item = dict(row)
+
+        if "value" not in item:
+            raise ValueError(
+                "Spreadsheet dataset requires a numeric 'value' field."
+            )
+
+        item["source_ref"] = file_path
+
+        dataset.append(item)
+
+    return {
+        "source_file": loaded["source_file"],
+        "source_type": loaded["source_type"],
+        "sheet": loaded.get("sheet"),
+        "columns": loaded["columns"],
+        "row_count": loaded["row_count"],
+        "dataset": dataset,
+        "engine_version": loaded["engine_version"],
+    }
