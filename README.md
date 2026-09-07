@@ -1,68 +1,121 @@
+Sovereign On-Premise Agentic AI Workbench
 
+Using Open-Weight Multimodal LLMs for Confidential Industrial Work
 
-### Sovereign On-Premise Agentic AI Workbench using Open-Weight Multimodal LLMs for Confidential Industrial Work
+This project is developed for Smart India Hackathon 2026 – SIH26117 under the Smart Automation theme.
 
-The problem belongs to the **Smart Automation** theme and targets industrial environments where AI must operate on sensitive and confidential engineering information.
+The Sovereign On-Premise Agentic AI Workbench is an AI-powered platform designed for confidential industrial environments such as refineries, oil & gas facilities, manufacturing plants, process industries, and engineering organizations.
 
-Industrial organizations such as refineries, oil & gas companies, manufacturing facilities, and process plants maintain huge volumes of confidential technical information.
+The platform combines local/open-weight AI with Retrieval-Augmented Generation (RAG), deterministic engineering calculations, verification, provenance, and human approval.
 
-This information can include:
+1. Problem Statement
 
-- Engineering manuals
-- Standard Operating Procedures
-- Inspection reports
-- Maintenance records
-- Asset registers
-- Equipment specifications
-- Historical operating data
-- Engineering drawings
-- Technical reports
-- Spreadsheets
-- Work orders
-- Process measurements
-- Safety procedures
-- Internal operational documents
+Industrial organizations maintain large volumes of confidential technical information, including:
 
-Traditional cloud-based AI systems can create significant concerns around:
+Engineering manuals
 
-- Data privacy
-- Data sovereignty
-- Confidentiality
-- Intellectual property
-- Industrial cybersecurity
-- Regulatory compliance
-- Unauthorized access
-- AI hallucination
-- Incorrect engineering calculations
-- Lack of traceability
-- Lack of auditability
+Standard Operating Procedures (SOPs)
 
----
+Inspection reports
 
-## 1.2 Project Objective
+Maintenance records
 
-The objective of this project is to develop an **AI-powered sovereign industrial workbench** that can operate inside an organization's controlled environment.
+Asset registers
+
+Equipment specifications
+
+Historical operating data
+
+Engineering drawings
+
+Technical reports
+
+Spreadsheets
+
+Work orders
+
+Process measurements
+
+Safety procedures
+
+Using cloud-based AI systems for such information can create concerns related to:
+
+Data privacy
+
+Data sovereignty
+
+Confidentiality
+
+Intellectual property
+
+Industrial cybersecurity
+
+Regulatory compliance
+
+Unauthorized access
+
+AI hallucination
+
+Incorrect engineering calculations
+
+Lack of traceability
+
+Lack of auditability
+
+The proposed system provides a controlled AI workbench that can operate inside an organization's infrastructure.
+
+2. Project Objective
+
+The objective is to build a sovereign industrial AI workbench capable of assisting engineers with confidential industrial tasks while maintaining control over:
+
+Data
+
+AI inference
+
+Tools
+
+Engineering calculations
+
+Rules
+
+Results
+
+Provenance
+
+Generated artifacts
 
 The platform combines:
 
-- Agentic AI
-- Open-weight LLMs
-- Local LLM inference
-- Retrieval-Augmented Generation
-- Industrial document intelligence
-- OCR
-- Vector search
-- Deterministic engineering calculations
-- Data analysis
-- Controlled code execution
-- Document generation
-- Verification
-- Provenance
-- Human approval
+Agentic AI
 
-The system is designed around the principle:
+Open-weight LLMs
 
-```text
+Local LLM inference
+
+Retrieval-Augmented Generation
+
+Industrial document intelligence
+
+OCR infrastructure
+
+Vector search
+
+Deterministic engineering calculations
+
+Data analysis
+
+Controlled code execution
+
+Document generation
+
+Verification
+
+Provenance
+
+Human approval
+
+Core philosophy:
+
 Understand
     ↓
 Retrieve
@@ -76,53 +129,58 @@ Explain
 Approve
     ↓
 Deliver
-2. Complete Project Overview
-2.1 What is the System?
 
-The Sovereign On-Premise Agentic AI Workbench is a unified AI platform for confidential industrial work.
+3. Complete System Overview
 
-Instead of being only a chatbot, it acts as an AI workbench capable of interacting with:
+Instead of acting only as a chatbot, the platform acts as an AI workbench capable of interacting with:
 
 Industrial documents
+
 Asset information
+
 Historical records
+
 Structured datasets
+
 Engineering calculations
+
 Maintenance information
+
 Knowledge repositories
+
 Analysis tools
+
 Code execution tools
+
 Document-generation tools
-2.2 Core Idea
 
-A user can ask an industrial question using natural language.
-
-For example:
-
-"What is the pressure of P-102 and how far is it from the approved operating limit?"
-
-The system can:
+A typical industrial workflow is:
 
 User Question
       ↓
-Intent Understanding
+Frontend
       ↓
-Agent Planning
+FastAPI Backend
       ↓
-Knowledge Retrieval
+Agent Orchestrator
+      ↓
+Planner
+      ↓
+Knowledge / Data Retrieval
       ↓
 Structured Calculation Request
       ↓
-Deterministic Calculation
+Deterministic Calculation Engine
       ↓
 Verification
       ↓
 Trace / Provenance
       ↓
-LLM Explanation
+Local LLM Explanation
       ↓
-User / Approval / Artifact
-2.3 Why Agentic AI?
+User / Human Approval / Artifact
+
+4. Why Agentic AI?
 
 A conventional chatbot generally follows:
 
@@ -132,7 +190,7 @@ LLM
    ↓
 Answer
 
-The proposed system follows:
+This project follows a controlled agentic workflow:
 
 Question
    ↓
@@ -152,211 +210,250 @@ Explain
    ↓
 Approve / Deliver
 
-This provides much stronger control and reliability for industrial applications.
+This architecture separates language understanding from deterministic engineering computation.
 
-3. Previous / Original Implementation
+The core principle is:
 
-Before the Calculation Engine enhancement, the project already contained a strong foundation for an industrial agentic AI platform.
+The LLM understands and explains. The deterministic Calculation Engine calculates.
 
-The original implementation included the following major components.
+5. Existing Project Foundation
 
-3.1 Agent Architecture
+The project already contains an industrial agentic AI foundation.
 
-The project already had:
+5.1 Agent Architecture
 
-Agent planner
-Agent executor
-Agent orchestrator
+backend/app/agents/
+├── planner.py
+├── executor.py
+├── orchestrator.py
+├── state.py
+└── verifier.py
+
+These components provide:
+
+Planning
+
+Tool execution
+
+Orchestration
+
 Agent state
-Verification layer
 
-These components provided the basic agentic workflow.
+Verification-oriented workflow handling
 
-3.2 Local LLM Architecture
+5.2 Local LLM Infrastructure
 
-The project included infrastructure for:
+The project contains infrastructure for:
 
 Local LLM communication
-Ollama
+
+Ollama integration
+
 Model registration
+
 Model routing
 
-This provided the foundation for sovereign AI inference.
+5.3 RAG Infrastructure
 
-3.3 RAG System
-
-The original project included:
+The project contains components for:
 
 Document parsing
-OCR
-Chunking
-Embeddings
-Keyword search
-Vector search
-Retrieval
-Qdrant integration
-3.4 Existing Tools
 
-The original tool layer contained:
+OCR
+
+Chunking
+
+Embeddings
+
+Keyword search
+
+Vector search
+
+Retrieval
+
+Qdrant integration
+
+5.4 Existing Tools
+
+The tool layer contains:
 
 Asset lookup
-Work-order lookup
-Document search
-Document reader
-Data analysis
-Code execution
-Coding agent
-Document generation
-Calculator
-3.5 Existing Industrial Dataset
 
-The project contains a sovereign industrial dataset:
+Work-order lookup
+
+Document search
+
+Document reader
+
+Data analysis
+
+Code execution
+
+Coding agent
+
+Document generation
+
+Calculator
+
+5.5 Industrial Dataset
+
+The project contains a sovereign industrial dataset structure:
 
 ApexPetro_Sovereign_Dataset_v3/
+├── assets/
+├── historical_records/
+├── manuals/
+├── sops/
+└── templates/
 
-with:
+Example P-102 inspection and maintenance records are used for demonstrating industrial workflows.
 
-assets/
-historical_records/
-manuals/
-sops/
-templates/
+5.6 Existing Frontend
 
-Example asset data includes an asset register and historical P-102 inspection and maintenance records.
-
-3.6 Existing Frontend
-
-The original project already provided a web-based workbench interface supporting:
+The web workbench supports workflows involving:
 
 Chat
-Knowledge interaction
-Calculations
-Data analysis
-Document generation
-Code-related operations
-Industrial information retrieval
-3.7 Existing Backend
 
-The backend already exposed multiple FastAPI routes for:
+Knowledge interaction
+
+Calculations
+
+Data analysis
+
+Industrial information retrieval
+
+Document-related operations
+
+5.7 Existing Backend
+
+The FastAPI backend provides routes for multiple functions including:
 
 Authentication
+
 Chat
+
 Assets
+
 Documents
+
 Knowledge
+
 Models
+
 Projects
+
 Tasks
+
 Work orders
+
 Approvals
+
 Security
+
 Artifacts
-4. Everything Newly Implemented
 
-The major new enhancement is the transformation of the basic calculator functionality into a structured Sovereign Deterministic Calculation Engine.
+Calculations
 
-4.1 New Calculation Architecture
+6. Major New Implementation: Calculation Engine
 
-A dedicated calculation subsystem was introduced:
+The major enhancement implemented in this project is the transformation of the basic calculator into a structured deterministic Calculation Engine.
+
+The calculation subsystem is located at:
 
 backend/app/calculation/
 
-containing:
+Current modules:
 
-__init__.py
-engine.py
-errors.py
-formulas.py
-models.py
-registry.py
-rules.py
-statistics.py
-store.py
-trace.py
-trends.py
-units.py
-verification.py
-spreadsheet.py
-4.2 Newly Added Capabilities
+backend/app/calculation/
+├── __init__.py
+├── engine.py
+├── errors.py
+├── formulas.py
+├── models.py
+├── registry.py
+├── rules.py
+├── statistics.py
+├── store.py
+├── trace.py
+├── trends.py
+├── units.py
+├── verification.py
+├── spreadsheet.py
+├── petroleum.py
+├── equipment.py
+└── multi_parameter.py
 
-The enhanced system supports:
+7. Calculation Engine Architecture
 
-Deterministic arithmetic
-Percentage calculations
-Absolute deviation
-Percentage deviation
-Percentage change
-Ratios
-Statistics
-Mean
-Median
-Trend analysis
-Moving averages
-Unit validation
-Unit conversion
-Threshold evaluation
-Engineering rules
-Calculation verification
-Calculation IDs
-Trace IDs
-Provenance
-Structured calculation requests
-Structured calculation responses
-Spreadsheet processing
-CSV support
-XLSX support
-Agent integration
-Calculation API
-4.3 Agent Integration
+The Calculation Engine follows:
 
-The planner was enhanced to recognize calculation-related natural-language requests.
+Structured Request
+       ↓
+Input Validation
+       ↓
+Unit Validation / Normalization
+       ↓
+Formula / Operation Selection
+       ↓
+Deterministic Execution
+       ↓
+Rule Evaluation
+       ↓
+Result Validation
+       ↓
+Independent Verification
+       ↓
+Trace Creation
+       ↓
+Structured Response
 
-The calculation workflow is now:
+The engine does not rely on the LLM to directly calculate engineering results.
 
-User
- ↓
-Planner
- ↓
-Calculation Intent
- ↓
-Structured Calculation Step
- ↓
-Calculator Tool
- ↓
-Calculation Engine
- ↓
-Verification
- ↓
-Orchestrator
- ↓
-LLM Explanation
-4.4 Calculator Tool Enhancement
-
-The existing calculator tool was converted into a deterministic wrapper around the Calculation Engine.
-
-This ensures that agents do not independently perform engineering calculations using uncontrolled LLM reasoning.
-
-5. Full Calculation Engine Work
-
-The Calculation Engine is one of the core engineering components of the project.
-
-Its purpose is to provide a controlled and deterministic environment for numerical and engineering calculations.
-
-5.1 Calculation Engine Responsibilities
+8. Calculation Engine Responsibilities
 
 The Calculation Engine handles:
 
 Input validation
+
+Missing-input detection
+
+Numeric validation
+
 Unit validation
+
 Unit normalization
+
 Formula selection
+
 Deterministic execution
+
 Rule evaluation
+
 Result validation
+
 Verification
-Trace creation
+
+Trace generation
+
 Provenance recording
-5.2 Supported Operations
+
+Calculation storage
+
+Missing values are not silently converted to zero.
+
+For example:
+
+Required input missing
+        ↓
+Calculation Error
+
+instead of:
+
+Missing input
+      ↓
+Assume 0
+
+9. Supported Calculation Operations
 
 Current core operations include:
 
@@ -373,37 +470,492 @@ median
 statistics
 trend
 moving_average
-5.3 Basic Arithmetic
+
+The architecture also contains petroleum, equipment, and multi-parameter calculation modules for expansion.
+
+10. Basic Arithmetic
+
 Addition
+
 A + B
 
 Example:
 
 10 bar + 5 bar = 15 bar
+
 Subtraction
+
 A - B
 
 Example:
 
 42 bar - 40 bar = 2 bar
+
 Multiplication
+
 A × B
+
 Division
+
 A / B
 
 Division by zero is explicitly rejected.
 
+Example:
+
+10 / 0
+
+returns a structured calculation error.
+
 Ratio
+
 A / B
 
-Ratios are returned with appropriate structured metadata.
+Ratios are returned as structured calculation results.
 
+11. Percentage and Deviation Calculations
 
+Absolute Deviation
 
+Actual - Reference
 
-7. Agent Architecture
+Example:
 
-The agent architecture consists of:
+42 - 40 = +2
+
+Percentage Deviation
+
+((Actual - Reference) / Reference) × 100
+
+Example:
+
+Actual = 42
+Reference = 40
+
+((42 - 40) / 40) × 100
+= 5%
+
+Percentage Change
+
+((Current - Previous) / Previous) × 100
+
+Example:
+
+Previous = 34 bar
+Current = 42 bar
+
+((42 - 34) / 34) × 100
+= 23.53%
+
+12. Formula Registry
+
+The Calculation Engine uses a controlled registry rather than executing arbitrary formulas supplied by an LLM.
+
+The registry stores calculation metadata such as:
+
+Operation ID
+
+Name
+
+Description
+
+Required inputs
+
+Formula
+
+Output
+
+Unit
+
+Authority
+
+Version
+
+Enabled/disabled state
+
+This provides a controlled calculation vocabulary.
+
+13. Unit Engine
+
+The Unit Engine validates and normalizes engineering units.
+
+Responsibilities include:
+
+Unit validation
+
+Compatibility checking
+
+Unit conversion
+
+Normalization
+
+Preservation of original units
+
+Preservation of normalized units
+
+Example:
+
+1000 kPa
+    ↓
+10 bar
+
+An incompatible operation such as:
+
+40 bar + 100 °C
+
+must be rejected.
+
+The engine must never guess an engineering unit conversion.
+
+14. Rules Engine
+
+The Formula Engine and Rules Engine are separate.
+
+Formula
+
+Performs mathematical computation.
+
+42 - 40 = 2 bar
+
+Rule
+
+Determines an engineering status.
+
+Actual Pressure > Approved Limit
+
+Example:
+
+Actual = 42 bar
+Limit  = 40 bar
+
+42 > 40
+
+Status:
+ENGINEERING_REVIEW
+
+A rule can contain:
+
+Rule ID
+
+Rule name
+
+Parameter
+
+Authority
+
+Version
+
+Unit
+
+Limit
+
+Condition
+
+Actual value
+
+Deviation
+
+Status
+
+15. P-102 Demonstration Rule
+
+A prototype P-102 pressure rule is implemented to demonstrate the complete Calculation Engine workflow.
+
+Rule ID:
+P102-PRESSURE-LIMIT
+
+Parameter:
+Pressure
+
+Limit:
+40 bar
+
+Version:
+1.0
+
+For:
+
+Actual pressure = 42 bar
+Reference limit = 40 bar
+
+the engine produces:
+
+Absolute deviation = +2 bar
+Percentage deviation = +5%
+Status = ENGINEERING_REVIEW
+Verification = VERIFIED
+
+Important: The 40 bar value is a prototype/demo rule used to demonstrate the architecture. It must not be interpreted as an actual MRPL safety limit unless supplied by an authoritative, approved, and versioned source.
+
+16. Statistics Engine
+
+The Calculation Engine supports deterministic statistical analysis.
+
+Supported operations include:
+
+Count
+
+Sum
+
+Mean
+
+Median
+
+Minimum
+
+Maximum
+
+Range
+
+Variance
+
+Standard deviation
+
+Percentiles
+
+Example:
+
+10
+20
+30
+
+Mean:
+
+(10 + 20 + 30) / 3
+= 20
+
+Statistical outputs can preserve dataset scope including:
+
+Dataset reference
+
+Number of rows
+
+Parameter
+
+Asset
+
+Unit
+
+Time range where available
+
+17. Trend Engine
+
+The Trend Engine supports historical analysis.
+
+Supported capabilities include:
+
+Period-to-period changes
+
+Percentage changes
+
+Rolling/moving averages
+
+Example:
+
+2025 = 34 bar
+2026 = 42 bar
+
+Absolute change:
+
+42 - 34
+= +8 bar
+
+Percentage change:
+
+((42 - 34) / 34) × 100
+= 23.53%
+
+Forecasting Principle
+
+Trend analysis is not automatically treated as forecasting.
+
+Forecasting should be a separate capability with its own:
+
+Model
+
+Validation
+
+Uncertainty handling
+
+Output labeling
+
+18. Multi-Parameter Engineering Analysis
+
+The project contains support for multi-parameter engineering analysis.
+
+The system is designed not to hide multiple engineering measurements behind an unexplained single score.
+
+A parameter-level result can contain:
+
+Parameter
+Actual
+Limit
+Deviation
+Percentage deviation
+Rule result
+Source
+
+This makes engineering analysis more transparent.
+
+19. Petroleum and Equipment Calculation Expansion
+
+The calculation architecture includes:
+
+petroleum.py
+equipment.py
+multi_parameter.py
+
+These provide a foundation for petroleum/refinery and equipment-oriented calculations.
+
+Each additional engineering formula should go through:
+
+Formula validation
+
+Unit definition
+
+Input validation
+
+Engineering reference
+
+Test cases
+
+Versioning
+
+No engineering formula should be added merely because an LLM generated it.
+
+20. Spreadsheet Support
+
+The Calculation Engine supports structured spreadsheet inputs.
+
+Currently supported formats:
+
+CSV
+XLSX
+
+Workflow:
+
+CSV / Excel
+      ↓
+File Parsing
+      ↓
+Sheet / Column Processing
+      ↓
+Type Validation
+      ↓
+Missing Value Validation
+      ↓
+Structured Dataset
+      ↓
+Calculation Engine
+
+Example:
+
+period | value | unit
+2024   | 34    | bar
+2025   | 37    | bar
+2026   | 42    | bar
+
+Possible requests:
+
+Calculate the average pressure.
+
+or:
+
+Calculate the percentage change between 2025 and 2026.
+
+21. Spreadsheet Validation
+
+Spreadsheet processing validates:
+
+File existence
+
+File format
+
+Headers
+
+Numeric values
+
+Missing values
+
+Finite numeric values
+
+Dataset structure
+
+Units where available
+
+Source references
+
+CSV and XLSX processing were directly tested.
+
+Example test dataset:
+
+period,value,unit
+2024,34,bar
+2025,37,bar
+2026,42,bar
+
+The statistics engine produced:
+
+Count = 3
+Sum = 113
+Mean = 37.6667
+Median = 37
+Minimum = 34
+Maximum = 42
+Range = 8
+Variance ≈ 16.3333
+Standard Deviation ≈ 4.0415
+P25 = 35.5
+P50 = 37
+P75 = 39.5
+
+The calculation result was successfully verified.
+
+22. Calculator Tool
+
+The existing calculator tool was enhanced to act as a deterministic wrapper around the Calculation Engine.
+
+Agent
+  ↓
+Calculator Tool
+  ↓
+Calculation Engine
+  ↓
+Verification
+  ↓
+Structured Result
+
+This prevents the agent from performing engineering calculations solely through uncontrolled LLM reasoning.
+
+23. Agent Integration
+
+The planner was enhanced to detect calculation-related natural-language requests.
+
+Workflow:
+
+User Question
+      ↓
+Planner
+      ↓
+Calculation Intent
+      ↓
+Structured Calculation Step
+      ↓
+Calculator Tool
+      ↓
+Calculation Engine
+      ↓
+Verification
+      ↓
+Orchestrator
+      ↓
+LLM Explanation
+
+The planner can recognize calculation patterns including engineering/petroleum-related requests supported by the implemented modules.
+
+If required inputs are missing, the system should retrieve the required information or report that the input is unavailable rather than inventing a value.
+
+24. Agent Architecture
 
 backend/app/agents/
 ├── planner.py
@@ -411,73 +963,85 @@ backend/app/agents/
 ├── orchestrator.py
 ├── state.py
 └── verifier.py
-7.1 Planner
 
-The planner determines:
+Planner
 
-User intent
-Required tools
-Required calculation
-Required documents
-Required datasets
-Task sequence
-7.2 Executor
+Responsible for:
 
-The executor performs the planned tool actions.
+Intent detection
 
-7.3 Orchestrator
+Task planning
 
-The orchestrator coordinates the overall process.
+Tool selection
 
-It combines:
+Calculation detection
+
+Required data identification
+
+Executor
+
+Executes planned tool operations.
+
+Orchestrator
+
+Coordinates:
 
 User request
+
+Agent planning
+
+Tool execution
+
 Retrieved evidence
-Tool outputs
+
 Calculation results
-Verification results
 
-before generating the final response.
+Verification
 
-7.4 State
+Final response generation
 
-Agent state maintains information throughout the workflow.
+The current orchestrator also communicates with the local Ollama service.
 
-7.5 Verifier
+State
 
-The verification layer validates the workflow and result.
+Maintains information throughout the agent workflow.
 
-8. LLM / Ollama
+Verifier
 
-The project is designed to use open-weight LLMs locally.
+Provides verification-oriented workflow checking.
+
+25. Local LLM / Ollama
+
+The platform is designed around local open-weight LLM inference.
 
 Ollama provides the local inference runtime.
 
-Relevant backend components:
-
-backend/app/llm/
-├── model_registry.py
-├── ollama_client.py
-└── router.py
-8.1 LLM Responsibilities
-
-The LLM handles:
+The LLM is responsible for:
 
 Natural-language understanding
-Intent classification
-Planning
-Tool selection
-Explanation
-Summarization
-Response generation
-8.2 What the LLM Should Not Do
 
-The LLM should not independently become the authoritative source for:
+Intent interpretation
+
+Planning assistance
+
+Tool selection
+
+Explanation
+
+Summarization
+
+Response generation
+
+The LLM should not be the authoritative source for:
 
 Engineering calculations
-Safety limits
-Plant-specific operating limits
+
+Plant-specific limits
+
 Approved formulas
+
+Safety limits
+
 Final numerical results
 
 Instead:
@@ -487,9 +1051,14 @@ LLM
 Structured Request
  ↓
 Deterministic Engine
-9. RAG / Qdrant
+ ↓
+Verified Result
+ ↓
+LLM Explanation
 
-The RAG subsystem allows the AI to retrieve confidential industrial knowledge.
+26. RAG / Qdrant
+
+The project contains a RAG subsystem for retrieving confidential industrial knowledge.
 
 backend/app/rag/
 ├── chunker.py
@@ -499,7 +1068,9 @@ backend/app/rag/
 ├── parser.py
 ├── retriever.py
 └── vector_store.py
-9.1 RAG Pipeline
+
+RAG workflow:
+
 Document
    ↓
 Parsing
@@ -517,33 +1088,65 @@ Retrieval
 Relevant Evidence
    ↓
 Agent / Calculation Engine
-9.2 RAG Responsibilities
 
-RAG provides:
+RAG can provide:
 
-Authoritative values
-SOP information
-Equipment specifications
+Equipment information
+
 Historical measurements
+
 Maintenance information
+
+SOP information
+
 Engineering references
-Source citations
 
-The Calculation Engine then uses the retrieved values to perform deterministic calculations.
+Source evidence
 
-10. OCR / Document Processing
+The retrieved values can then be passed into the deterministic Calculation Engine.
 
-Industrial knowledge is not always stored as machine-readable text.
+27. RAG and Local LLM Current Status
 
-The platform therefore includes document processing and OCR.
+The RAG infrastructure is present in the project.
 
-Supported document workflows include:
+Full RAG + local LLM synthesis depends on the configured Ollama model being installed and available locally.
+
+For example, if the configured model is:
+
+qwen2.5:3b
+
+check:
+
+ollama list
+
+If required:
+
+ollama pull qwen2.5:3b
+
+Test:
+
+ollama run qwen2.5:3b
+
+A missing Ollama model is an environment/configuration issue and does not indicate failure of the deterministic Calculation Engine.
+
+The Calculation Engine can be tested independently through direct engine tests and its APIs.
+
+28. OCR / Document Processing
+
+Industrial information can exist in scanned documents.
+
+The project contains infrastructure for:
 
 PDF parsing
+
 OCR
+
 Text extraction
+
 Chunking
-Metadata handling
+
+Metadata processing
+
 Retrieval
 
 Example:
@@ -556,142 +1159,131 @@ Extracted Measurement
         ↓
 RAG
         ↓
+Structured Input
+        ↓
 Calculation Engine
-11. Tools
+
+OCR-derived engineering values should be validated before being used for important decisions.
+
+29. Tool Layer
 
 The tool layer provides controlled capabilities to agents.
 
 backend/app/tools/
+├── asset_lookup.py
+├── base.py
+├── calculator.py
+├── code_executor.py
+├── coding_agent.py
+├── data_analysis.py
+├── document_generation_tool.py
+├── document_reader.py
+├── document_search.py
+└── work_order_lookup.py
 
-Current tools include:
+Tools include:
 
-asset_lookup.py
-base.py
-calculator.py
-code_executor.py
-coding_agent.py
-data_analysis.py
-document_generation_tool.py
-document_reader.py
-document_search.py
-work_order_lookup.py
-11.1 Asset Lookup
+Asset Lookup
 
 Retrieves asset-related information.
 
-11.2 Work Order Lookup
+Work Order Lookup
 
-Retrieves maintenance/work-order information.
+Retrieves maintenance and work-order information.
 
-11.3 Document Search
+Document Search
 
 Searches the industrial knowledge base.
 
-11.4 Document Reader
+Document Reader
 
-Reads and extracts information from documents.
+Reads document information.
 
-11.5 Calculator
+Calculator
 
-Acts as the controlled interface to the deterministic Calculation Engine.
+Provides deterministic access to the Calculation Engine.
 
-11.6 Data Analysis
+Data Analysis
 
-Performs structured data-analysis tasks.
+Supports structured data analysis.
 
-11.7 Code Executor
+Code Executor
 
-Provides controlled execution for supported analytical/code workflows.
+Provides controlled analytical/code execution.
 
-11.8 Coding Agent
+Coding Agent
 
-Supports programming-related tasks where appropriate.
+Supports programming-related tasks.
 
-11.9 Document Generation
+Document Generation
 
-Creates structured industrial artifacts.
+Generates structured industrial artifacts.
 
-12. Data Analysis
+30. Code Execution
 
-The workbench supports industrial data analysis.
+The project contains controlled code-execution capabilities for analytical workflows.
 
-Potential data sources include:
-
-CSV
-Excel
-Historical measurements
-Asset datasets
-Maintenance records
-Inspection datasets
-12.1 Supported Analysis
-
-Examples include:
-
-Mean
-Median
-Minimum
-Maximum
-Range
-Standard deviation
-Percentiles
-Time-series changes
-Moving averages
-Parameter comparisons
-12.2 Multi-Parameter Analysis
-
-
-
-The system does not hide engineering information behind an unexplained single score.
-
-13. Code Execution
-
-The project contains a controlled code-execution capability.
-
-It can support:
+Potential use cases include:
 
 Python execution
-Numerical analysis
+
 Dataset processing
-Data transformations
-Technical calculations
+
+Numerical analysis
+
+Data transformation
+
 Analytical workflows
 
-The code execution environment should remain controlled and isolated.
+In a sovereign industrial deployment, code execution must remain isolated and controlled.
 
-Arbitrary host access and arbitrary network access should not be permitted in a sovereign industrial deployment.
+The system should not provide unrestricted:
 
-14. Document Generation
+Host filesystem access
 
-The platform supports generation of industrial artifacts.
+Network access
 
-Potential outputs include:
+System-level access
+
+without explicit authorization and isolation.
+
+31. Document Generation
+
+The workbench contains document-generation capabilities.
+
+Potential artifacts include:
 
 DOCX
+
 XLSX
+
 PPTX
+
 PDF
-14.1 Artifact Workflow
+
+Workflow:
+
 User Request
-     ↓
+      ↓
 Agent
-     ↓
+      ↓
 Retrieve Evidence
-     ↓
+      ↓
 Calculation Engine
-     ↓
+      ↓
 Verification
-     ↓
+      ↓
 Artifact Generation
-     ↓
+      ↓
 Final Document
 
-Calculation IDs can be referenced inside generated artifacts to provide traceability.
+Calculation IDs can be included in generated artifacts to improve traceability.
 
-15. Approval Workflow
+32. Approval Workflow
 
-Industrial systems require human oversight for sensitive actions.
+Industrial AI systems require human oversight for sensitive decisions.
 
-The platform supports approval-oriented workflows.
+The intended workflow is:
 
 AI Recommendation
        ↓
@@ -703,46 +1295,346 @@ Approval
        ↓
 Action / Artifact
 
-The system is designed so that AI does not automatically replace human engineering responsibility.
+The AI system is intended to assist engineers rather than replace qualified engineering responsibility.
 
-16. Frontend / Backend
-16.1 Frontend
-
-The frontend uses:
-
-React
-Vite
-JavaScript / TypeScript
-HTML
-CSS
+33. Frontend
 
 Frontend location:
 
 Replicate Existing Design/
-16.2 Backend
 
-The backend uses:
+Technology:
 
-Python
-FastAPI
-Pydantic
-SQLAlchemy
-Uvicorn
+React
+
+Vite
+
+TypeScript / JavaScript
+
+HTML
+
+CSS
+
+Development URL:
+
+http://localhost:5173/
+
+34. Backend
 
 Backend location:
 
 backend/
-16.3 Backend Port
 
-Default development backend:
+Technology:
+
+Python
+
+FastAPI
+
+Pydantic
+
+SQLAlchemy
+
+Uvicorn
+
+Development URL:
 
 http://127.0.0.1:8000
-16.4 Frontend Port
 
-Development frontend:
+Swagger documentation:
 
-http://localhost:5173/
-17. Complete Architecture
+http://127.0.0.1:8000/docs
+
+35. Calculation APIs
+
+The Calculation Engine API is available under:
+
+/api/calculations
+
+Execute Calculation
+
+POST /api/calculations/execute
+
+Statistics
+
+POST /api/calculations/statistics
+
+Trend
+
+POST /api/calculations/trend
+
+Mean
+
+POST /api/calculations/mean
+
+Median
+
+POST /api/calculations/median
+
+Moving Average
+
+POST /api/calculations/moving-average
+
+Unit Conversion
+
+POST /api/calculations/unit-convert
+
+Threshold Evaluation
+
+POST /api/calculations/threshold
+
+Get Calculation
+
+GET /api/calculations/{calculation_id}
+
+Get Calculation Trace
+
+GET /api/calculations/{calculation_id}/trace
+
+36. Calculation Request Model
+
+The Calculation Engine accepts structured requests containing:
+
+operation
+inputs
+dataset
+context
+
+An input can contain:
+
+value
+unit
+source
+source_ref
+timestamp
+asset_id
+dataset_ref
+
+This allows calculations to retain engineering context and provenance.
+
+Example conceptual request:
+
+{
+  "operation": "percentage_deviation",
+  "inputs": {
+    "actual": {
+      "value": 42,
+      "unit": "bar"
+    },
+    "reference": {
+      "value": 40,
+      "unit": "bar"
+    }
+  }
+}
+
+37. Verification
+
+Verification occurs after deterministic execution.
+
+The verifier checks aspects such as:
+
+Inputs
+   ↓
+Units
+   ↓
+Formula
+   ↓
+Execution
+   ↓
+Result
+   ↓
+Rule
+   ↓
+Trace
+
+A successful calculation can return:
+
+verification_status:
+VERIFIED
+
+If a verification problem occurs, it should be surfaced rather than silently accepting the result.
+
+38. Calculation Trace / Provenance
+
+Calculations can be assigned unique identifiers.
+
+Example:
+
+Calculation ID:
+CAL-35B858B5ED30
+
+Trace ID:
+TRACE-3CAB137224A9
+
+A calculation trace may contain:
+
+Input values
+
+Original units
+
+Normalized values
+
+Source references
+
+Asset ID
+
+Dataset reference
+
+Timestamp
+
+Formula
+
+Formula version
+
+Rule
+
+Rule version
+
+Engine version
+
+Result
+
+Verification status
+
+Warnings
+
+Errors
+
+Context
+
+This allows an engineer to answer:
+
+Where did this number come from?
+
+Traceability:
+
+Source
+  ↓
+Input
+  ↓
+Normalization
+  ↓
+Formula
+  ↓
+Calculation
+  ↓
+Rule
+  ↓
+Result
+  ↓
+Verification
+
+39. P-102 End-to-End Demonstration
+
+The P-102 workflow demonstrates the complete deterministic calculation architecture.
+
+Step 1 — User Question
+
+Example:
+
+"Is P-102 operating above its approved pressure limit?"
+
+Step 2 — Retrieved/Provided Inputs
+
+Actual Pressure = 42 bar
+Reference Limit = 40 bar
+
+Step 3 — Structured Calculation
+
+Operation:
+percentage_deviation
+
+Actual:
+42 bar
+
+Reference:
+40 bar
+
+Step 4 — Deterministic Calculation
+
+Absolute deviation:
+
+42 - 40
+=
++2 bar
+
+Percentage deviation:
+
+((42 - 40) / 40) × 100
+=
+5%
+
+Step 5 — Rule Evaluation
+
+42 > 40
+
+Result:
+
+ENGINEERING_REVIEW
+
+Step 6 — Verification
+
+VERIFIED
+
+Step 7 — Trace
+
+Example:
+
+Calculation ID:
+CAL-35B858B5ED30
+
+Trace ID:
+TRACE-3CAB137224A9
+
+Step 8 — Final Explanation
+
+The LLM can explain the verified result:
+
+P-102 is operating 2 bar above the
+40 bar reference limit.
+
+This corresponds to a 5% deviation.
+
+The deterministic Calculation Engine
+verified the calculation and classified
+the condition as ENGINEERING_REVIEW.
+
+The 40 bar value is a demonstration/prototype rule and is not claimed to be an actual MRPL safety limit.
+
+40. Spreadsheet Test
+
+The Calculation Engine was directly tested using:
+
+period,value,unit
+2024,34,bar
+2025,37,bar
+2026,42,bar
+
+Results included:
+
+Count = 3
+Sum = 113
+Mean = 37.6667
+Median = 37
+Minimum = 34
+Maximum = 42
+Range = 8
+Variance ≈ 16.3333
+Standard Deviation ≈ 4.0415
+P25 = 35.5
+P50 = 37
+P75 = 39.5
+
+The calculation result returned:
+
+Status = NORMAL
+Verification = VERIFIED
+
+for the demonstrated statistics workflow.
+
+41. Complete Architecture
+
                          ┌─────────────────────┐
                          │        USER         │
                          └──────────┬──────────┘
@@ -759,55 +1651,57 @@ http://localhost:5173/
                                     │
                                     ▼
                          ┌─────────────────────┐
-                         │   Agent Orchestrator│
+                         │  Agent Orchestrator │
                          └──────────┬──────────┘
                                     │
-                      ┌─────────────┼─────────────┐
-                      │             │             │
-                      ▼             ▼             ▼
-                ┌──────────┐ ┌──────────┐ ┌────────────┐
-                │ Planner  │ │ Local LLM│ │   RAG      │
-                └──────────┘ │ Ollama   │ │ Qdrant     │
-                             └──────────┘ └─────┬──────┘
-                                                │
-                      ┌─────────────────────────┼───────────────────────┐
-                      │                         │                       │
-                      ▼                         ▼                       ▼
-                ┌─────────────┐          ┌─────────────┐        ┌────────────┐
-                │ Calculation │          │ Data        │        │ Document   │
-                │ Engine      │          │ Analysis    │        │ Processing │
-                └──────┬──────┘          └─────────────┘        └────────────┘
-                       │
-              ┌────────┼─────────┐
-              ▼        ▼         ▼
-          Formula    Units      Rules
-           Engine    Engine     Engine
-              │        │         │
-              └────────┼─────────┘
-                       ▼
-                ┌──────────────┐
-                │ Verification │
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │ Trace / Audit│
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │ LLM Explain  │
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │ User / Human │
-                │   Approval   │
-                └──────────────┘
-18. Complete Folder Structure
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+              ┌──────────┐   ┌────────────┐   ┌──────────┐
+              │ Planner  │   │ Local LLM  │   │   RAG    │
+              │          │   │  Ollama    │   │ Qdrant   │
+              └──────────┘   └────────────┘   └────┬─────┘
+                                                   │
+                         ┌─────────────────────────┼───────────────┐
+                         │                         │               │
+                         ▼                         ▼               ▼
+                 ┌──────────────┐        ┌─────────────┐   ┌────────────┐
+                 │ Calculation  │        │ Data        │   │ Document   │
+                 │ Engine       │        │ Analysis    │   │ Processing │
+                 └──────┬───────┘        └─────────────┘   └────────────┘
+                        │
+               ┌────────┼────────┐
+               ▼        ▼        ▼
+           ┌────────┐ ┌──────┐ ┌──────┐
+           │Formula │ │Units │ │Rules │
+           │Engine  │ │Engine│ │Engine│
+           └────────┘ └──────┘ └──────┘
+               │        │        │
+               └────────┼────────┘
+                        ▼
+                 ┌──────────────┐
+                 │ Verification │
+                 └──────┬───────┘
+                        ▼
+                 ┌──────────────┐
+                 │ Trace / Audit│
+                 └──────┬───────┘
+                        ▼
+                 ┌──────────────┐
+                 │ LLM Explain  │
+                 └──────┬───────┘
+                        ▼
+                 ┌──────────────┐
+                 │ User / Human │
+                 │   Approval   │
+                 └──────────────┘
+
+42. Project Structure
+
 Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench/
 │
 ├── backend/
-│   │
 │   ├── app/
-│   │   │
 │   │   ├── agents/
 │   │   │   ├── executor.py
 │   │   │   ├── orchestrator.py
@@ -817,21 +1711,6 @@ Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench/
 │   │   │
 │   │   ├── api/
 │   │   │   └── routes/
-│   │   │       ├── approvals.py
-│   │   │       ├── artifacts.py
-│   │   │       ├── assets.py
-│   │   │       ├── auth.py
-│   │   │       ├── chat.py
-│   │   │       ├── code.py
-│   │   │       ├── document_generation.py
-│   │   │       ├── documents.py
-│   │   │       ├── health.py
-│   │   │       ├── knowledge.py
-│   │   │       ├── models.py
-│   │   │       ├── projects.py
-│   │   │       ├── security.py
-│   │   │       ├── tasks.py
-│   │   │       └── work_orders.py
 │   │   │
 │   │   ├── calculation/
 │   │   │   ├── __init__.py
@@ -847,16 +1726,17 @@ Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench/
 │   │   │   ├── trends.py
 │   │   │   ├── units.py
 │   │   │   ├── verification.py
-│   │   │   └── spreadsheet.py
+│   │   │   ├── spreadsheet.py
+│   │   │   ├── petroleum.py
+│   │   │   ├── equipment.py
+│   │   │   └── multi_parameter.py
 │   │   │
 │   │   ├── core/
 │   │   ├── db/
-│   │   │
 │   │   ├── llm/
 │   │   │   ├── model_registry.py
 │   │   │   ├── ollama_client.py
 │   │   │   └── router.py
-│   │   │
 │   │   ├── rag/
 │   │   │   ├── chunker.py
 │   │   │   ├── embeddings.py
@@ -865,20 +1745,8 @@ Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench/
 │   │   │   ├── parser.py
 │   │   │   ├── retriever.py
 │   │   │   └── vector_store.py
-│   │   │
 │   │   ├── services/
-│   │   │
 │   │   └── tools/
-│   │       ├── asset_lookup.py
-│   │       ├── base.py
-│   │       ├── calculator.py
-│   │       ├── code_executor.py
-│   │       ├── coding_agent.py
-│   │       ├── data_analysis.py
-│   │       ├── document_generation_tool.py
-│   │       ├── document_reader.py
-│   │       ├── document_search.py
-│   │       └── work_order_lookup.py
 │   │
 │   ├── data/
 │   ├── scripts/
@@ -888,41 +1756,17 @@ Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench/
 │   └── requirements.txt
 │
 ├── ApexPetro_Sovereign_Dataset_v3/
-│   ├── assets/
-│   │   └── asset_register.xlsx
-│   │
-│   ├── historical_records/
-│   │   ├── inspection/
-│   │   │   ├── P-102_inspection_2024.pdf
-│   │   │   ├── P-102_inspection_2025.pdf
-│   │   │   └── P-102_inspection_2026.pdf
-│   │   │
-│   │   └── maintenance/
-│   │       └── P-102_maintenance_history.pdf
-│   │
-│   ├── manuals/
-│   │   └── engineering/
-│   │
-│   ├── sops/
-│   │
-│   └── templates/
 │
 ├── Replicate Existing Design/
-│   └── frontend/
 │
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── IMPLEMENTATION_MAP.md
-│   ├── IMPLEMENTATION_PLAN.md
-│   └── IMPLEMENTATION_STATUS.md
 │
 ├── .gitignore
 └── README.md
-19. APIs
 
-The FastAPI backend exposes multiple functional API groups.
+43. API Categories
 
-Main API categories include:
+Main backend API groups include:
 
 /api/auth
 /api/chat
@@ -938,524 +1782,11 @@ Main API categories include:
 /api/security
 /api/artifacts
 
-Swagger documentation:
+Swagger:
 
 http://127.0.0.1:8000/docs
-20. Calculation Engine APIs
 
-The dedicated Calculation API provides structured endpoints.
-
-Execute Calculation
-POST /api/calculations/execute
-Statistics
-POST /api/calculations/statistics
-Trend
-POST /api/calculations/trend
-Mean
-POST /api/calculations/mean
-Median
-POST /api/calculations/median
-Moving Average
-POST /api/calculations/moving-average
-Unit Conversion
-POST /api/calculations/unit-convert
-Threshold Evaluation
-POST /api/calculations/threshold
-Get Calculation
-GET /api/calculations/{calculation_id}
-Get Calculation Trace
-GET /api/calculations/{calculation_id}/trace
-21. Formula Engine
-
-The Formula Engine provides deterministic engineering formulas.
-
-Supported core formulas include:
-
-Addition
-Subtraction
-Multiplication
-Division
-Ratio
-Absolute Deviation
-Percentage Deviation
-Percentage Change
-Mean
-Median
-Statistics
-Trend
-Moving Average
-Percentage Deviation
-Percentage Deviation =
-((Actual - Reference) / Reference) × 100
-
-Example:
-
-Actual = 42
-Reference = 40
-
-((42 - 40) / 40) × 100
-= 5%
-Percentage Change
-Percentage Change =
-((Current - Previous) / Previous) × 100
-Absolute Deviation
-Absolute Deviation =
-Actual - Reference
-22. Unit Engine
-
-The Unit Engine validates and normalizes engineering units.
-
-Responsibilities
-Unit validation
-Compatibility checking
-Conversion
-Normalization
-Original unit preservation
-Normalized unit preservation
-Example
-Input:
-1000 kPa
-
-Normalized:
-10 bar
-Invalid Example
-Pressure + Temperature
-
-must be rejected because the dimensions are incompatible.
-
-The engine must never guess a conversion.
-
-23. Rules Engine
-
-The Rules Engine is separate from the Formula Engine.
-
-This is important because:
-
-Formula
-=
-Mathematical calculation
-
-Rule
-=
-Engineering decision condition
-Example
-
-Formula:
-
-Deviation =
-42 - 40
-=
-+2 bar
-
-Rule:
-
-Actual Pressure > Approved Limit
-
-Result:
-
-ENGINEERING_REVIEW
-Rule Information
-
-A rule can contain:
-
-Rule ID
-Rule Name
-Parameter
-Authority
-Version
-Unit
-Limit
-Condition
-Actual Value
-Deviation
-Status
-Example Rule
-Rule ID:
-P102-PRESSURE-LIMIT
-
-Name:
-P-102 Operating Pressure Rule
-
-Parameter:
-Pressure
-
-Authority:
-P-102 approved operating limit
-
-Version:
-1.0
-
-Limit:
-40 bar
-24. Statistics
-
-The Statistics Engine supports:
-
-Count
-Sum
-Mean
-Median
-Minimum
-Maximum
-Range
-Variance
-Standard Deviation
-Percentiles
-Mean
-Mean =
-Sum of Values / Number of Values
-Median
-
-The middle value after sorting the dataset.
-
-Range
-Range =
-Maximum - Minimum
-Standard Deviation
-
-Used to measure the spread of values around the mean.
-
-Dataset Scope
-
-Statistical outputs should preserve:
-
-Dataset
-Rows
-Time range
-Asset
-Parameter
-Number of values
-
-This allows the result to be auditable.
-
-25. Time-Series / Trends
-
-The Trend Engine supports historical data analysis.
-
-Period-to-Period Change
-
-For:
-
-Previous = 34 bar
-Current = 42 bar
-
-Absolute change:
-
-42 - 34
-=
-+8 bar
-
-Percentage change:
-
-((42 - 34) / 34) × 100
-=
-23.53%
-Moving Average
-
-For a window of three values:
-
-10
-20
-30
-
-Moving average:
-
-(10 + 20 + 30) / 3
-=
-20
-
-The system can generate rolling averages over historical datasets.
-
-Forecasting Principle
-
-Historical trend analysis must not automatically be described as forecasting.
-
-Forecasting should be treated as a separate capability with its own model, validation, and uncertainty handling.
-
-26. Verification
-
-Verification is a separate stage after deterministic calculation.
-
-The verifier checks:
-
-Source
- ↓
-Inputs
- ↓
-Units
- ↓
-Formula
- ↓
-Execution
- ↓
-Output
- ↓
-Rule
- ↓
-Trace
-Verification Checks
-Input Verification
-
-Are required values present?
-
-Unit Verification
-
-Are units valid and compatible?
-
-Formula Verification
-
-Is the approved formula being used?
-
-Output Verification
-
-Is the result consistent with the calculation?
-
-Rule Verification
-
-Is the rule version valid?
-
-Provenance Verification
-
-Are sources available?
-
-Verification Result
-
-Example:
-
-verification_status:
-VERIFIED
-
-If a verification problem occurs, the system should report it rather than silently accepting the result.
-
-27. Trace / Provenance
-
-Every calculation can be assigned:
-
-Calculation ID
-Trace ID
-
-Example:
-
-Calculation ID:
-CAL-35B858B5ED30
-
-Trace ID:
-TRACE-3CAB137224A9
-Trace Contents
-
-A calculation trace may contain:
-
-Input Values
-Original Units
-Normalized Values
-Source References
-Asset ID
-Dataset Reference
-Timestamp
-Formula
-Formula Version
-Rule
-Rule Version
-Engine Version
-Result
-Verification Status
-Warnings
-Errors
-Why Traceability Matters
-
-Traceability allows an engineer to answer:
-
-Where did this number come from?
-
-The system can show:
-
-Source
-  ↓
-Input
-  ↓
-Formula
-  ↓
-Calculation
-  ↓
-Rule
-  ↓
-Result
-  ↓
-Verification
-28. Spreadsheet / Excel / CSV Support
-
-The Calculation Engine supports structured spreadsheet inputs.
-
-Supported formats:
-
-CSV
-XLSX
-Spreadsheet Workflow
-Excel / CSV
-     ↓
-File Parsing
-     ↓
-Sheet Detection
-     ↓
-Column Detection
-     ↓
-Type Detection
-     ↓
-Unit Detection
-     ↓
-Missing Value Detection
-     ↓
-Structured Dataset
-     ↓
-Calculation Engine
-Example
-
-A spreadsheet containing:
-
-Date | Asset | Pressure | Temperature
-
-can be used for questions such as:
-
-"Calculate the average pressure for P-102."
-
-or:
-
-"Calculate the percentage change in pressure between 2025 and 2026."
-
-29. P-102 End-to-End Example
-
-The P-102 workflow demonstrates the complete architecture.
-
-Step 1 — User Question
-
-Example:
-
-"Is P-102 operating above its approved pressure limit?"
-
-Step 2 — Retrieval
-
-The system retrieves:
-
-Actual Pressure = 42 bar
-
-from the available industrial evidence.
-
-It retrieves:
-
-Approved Limit = 40 bar
-
-from the authoritative source/rule.
-
-Step 3 — Structured Calculation
-
-The agent creates:
-
-Operation:
-percentage_deviation
-
-with:
-
-Actual:
-42 bar
-
-Reference:
-40 bar
-Step 4 — Deterministic Calculation
-
-Absolute deviation:
-
-42 - 40
-=
-+2 bar
-
-Percentage deviation:
-
-((42 - 40) / 40) × 100
-=
-5%
-Step 5 — Rule Evaluation
-
-Condition:
-
-42 > 40
-
-Therefore:
-
-Status =
-ENGINEERING_REVIEW
-Step 6 — Verification
-
-The result is independently checked.
-
-Verification =
-VERIFIED
-Step 7 — Trace
-
-Example:
-
-Calculation ID:
-CAL-35B858B5ED30
-
-Trace ID:
-TRACE-3CAB137224A9
-Step 8 — Final Explanation
-
-The LLM explains the verified result:
-
-P-102 is operating 2 bar above the approved
-40 bar reference limit.
-
-This corresponds to a 5% deviation.
-
-The deterministic Calculation Engine verified
-the result and classified the condition as
-ENGINEERING_REVIEW.
-30. Security / Sovereignty
-
-Security and sovereignty are fundamental requirements of the platform.
-
-30.1 On-Premise Processing
-
-The system is designed to operate inside the organization's infrastructure.
-
-Sensitive information can remain within the organization's controlled environment.
-
-30.2 Local LLM
-
-LLM inference can be performed using local open-weight models through Ollama.
-
-30.3 Confidential Knowledge Base
-
-Industrial documents can remain in local storage and local vector databases.
-
-30.4 Controlled Tool Access
-
-Agents should only have access to approved tools.
-
-30.5 No Arbitrary File Access
-
-Agents should not be allowed unrestricted access to the host machine.
-
-30.6 No Arbitrary Network Access
-
-Agents should not be allowed unrestricted outbound network access in a confidential deployment.
-
-30.7 Permission-Aware Access
-
-Access should consider:
-
-User
-Role
-Project
-Dataset
-Document
-Classification
-Permission
-30.8 Auditability
-
-Important operations should be traceable.
-
-31. Error Handling
+44. Error Handling
 
 The Calculation Engine follows explicit error handling.
 
@@ -1465,14 +1796,13 @@ Example:
 
 Actual pressure is missing.
 
-The engine must not assume:
-
-Actual pressure = 0
-
-Instead:
+Result:
 
 ERROR:
 Required input is missing.
+
+The engine does not assume zero.
+
 Invalid Numeric Input
 
 Example:
@@ -1482,106 +1812,118 @@ Pressure = "abc"
 Result:
 
 Calculation validation error
-Division by Zero
 
-Example:
+Division by Zero
 
 10 / 0
 
 Result:
 
 Division by zero is not allowed.
-Incompatible Units
 
-Example:
+Incompatible Units
 
 40 bar + 100 °C
 
 Result:
 
 Incompatible units.
+
 Unknown Calculation
 
-If an unsupported operation is requested:
+Unsupported operations produce:
 
 Unknown calculation operation.
+
 Invalid Formula
 
-The engine must reject invalid formulas rather than executing arbitrary expressions.
+The engine must reject invalid formulas instead of executing arbitrary expressions.
 
-Stale Rule
+Stale/Invalid Rule
 
-If a rule is outdated:
+Rule verification should fail when a rule is not valid for the required context.
 
-Rule verification failed.
-
-The system should not silently use a potentially invalid engineering limit.
-
-Execution Failure
-
-Unexpected calculation failures should return structured errors.
-
-32. Testing
+45. Testing
 
 Testing is essential for engineering reliability.
 
-32.1 Formula Tests
-
-Test:
+45.1 Formula Tests
 
 Addition
+
 Subtraction
+
 Multiplication
+
 Division
+
 Ratio
-Absolute Deviation
-Percentage Deviation
-Percentage Change
-32.2 Unit Tests
 
-Test:
+Absolute deviation
 
-Valid Conversion
-Invalid Conversion
-Compatible Units
-Incompatible Units
-32.3 Rule Tests
+Percentage deviation
 
-Test:
+Percentage change
 
-Below Limit
-At Limit
-Above Limit
-32.4 Statistical Tests
+45.2 Unit Tests
 
-Test:
+Valid conversion
+
+Invalid conversion
+
+Compatible units
+
+Incompatible units
+
+45.3 Rule Tests
+
+Below limit
+
+At limit
+
+Above limit
+
+45.4 Statistical Tests
 
 Mean
+
 Median
+
 Minimum
+
 Maximum
+
 Range
+
 Variance
-Standard Deviation
+
+Standard deviation
+
 Percentiles
-32.5 Trend Tests
 
-Test:
+45.5 Trend Tests
 
-Period Change
-Percentage Change
-Moving Average
-32.6 Error Tests
+Period change
 
-Test:
+Percentage change
 
-Missing Input
-Invalid Numeric Input
-Division by Zero
-Invalid Unit
-Unknown Operation
-Invalid Dataset
-32.7 Reproducibility
+Moving average
+
+45.6 Error Tests
+
+Missing input
+
+Invalid numeric input
+
+Division by zero
+
+Invalid unit
+
+Unknown operation
+
+Invalid dataset
+
+45.7 Reproducibility
 
 The same:
 
@@ -1593,469 +1935,211 @@ Rule Version
 
 should produce the same deterministic result.
 
-32.8 P-102 Test
+46. Current Implementation Status
 
-The P-102 workflow was tested with:
-
-Actual = 42 bar
-Reference = 40 bar
-
-Expected:
-
-Absolute Deviation = +2 bar
-Percentage Deviation = 5%
-Status = ENGINEERING_REVIEW
-Verification = VERIFIED
-33. Technology Stack
-Frontend
-React
-Vite
-JavaScript
-TypeScript where applicable
-HTML
-CSS
-Backend
-Python
-FastAPI
-Pydantic
-SQLAlchemy
-Uvicorn
-AI
-Open-weight LLMs
-Ollama
-Agentic AI
-RAG
-Vector Database
-Qdrant
-Database
-SQLite
-SQLAlchemy
-Data Processing
-Pandas
-NumPy
-OpenPyXL
-CSV
-XLSX
-Document Processing
-PDF processing
-OCR
-Text extraction
-Document parsing
-Development
-Git
-GitHub
-VS Code
-34. Installation
-34.1 Prerequisites
-
-Install:
-
-Python 3.12+
-Node.js
-npm
-Git
-Ollama
-34.2 Clone Repository
-git clone https://github.com/riddhimankar-dev/Sovereign_On_Premise_Agentic_AI_Workbench.git
-
-Enter the project:
-
-cd Sovereign_On_Premise_Agentic_AI_Workbench
-34.3 Backend Environment
-
-Open a terminal:
-
-cd backend
-
-Activate the environment:
-
-.venv\Scripts\activate
-
-Install dependencies:
-
-pip install -r requirements.txt
-34.4 Frontend Dependencies
-
-Open another terminal:
-
-cd "Replicate Existing Design"
-
-Install:
-
-npm install
-35. How to Run
-35.1 Start Backend
-cd "C:\Users\riddh\OneDrive\Desktop\sih_117\Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench\backend"
-
-Activate environment:
-
-.venv\Scripts\activate
-
-Start FastAPI:
-
-python -m uvicorn app.main:app --reload
-
-Backend:
-
-http://127.0.0.1:8000
-
-Swagger:
-
-http://127.0.0.1:8000/docs
-35.2 Start Frontend
-
-Open another terminal:
-
-cd "C:\Users\riddh\OneDrive\Desktop\sih_117\Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench\Replicate Existing Design"
-
-Run:
-
-npm run dev -- --port 5173
-
-Open:
-
-http://localhost:5173/
-35.3 Ollama
-
-Check installed models:
-
-ollama list
-
-The selected open-weight model should be available locally before using the full local-LLM workflow.
-
-36. Current Implementation Status
 🟢 Implemented
+
 Core Platform
+
 Agent architecture
+
 Planner
+
 Executor
+
 Orchestrator
+
 Agent state
-Local LLM integration foundation
-Ollama integration
-Model routing
-RAG pipeline
-Qdrant vector store
-Document parsing
-OCR infrastructure
-Embeddings
-Keyword search
-Asset lookup
-Work-order lookup
-Document search
-Document reader
-Data analysis
-Code execution
-Coding agent
-Document generation
-Approval workflow
+
 FastAPI backend
+
 React/Vite frontend
-🟢 Calculation Engine Implemented
+
+Local LLM integration foundation
+
+Ollama communication
+
+Tool layer
+
+Data analysis infrastructure
+
+Document processing infrastructure
+
+RAG/Qdrant infrastructure
+
+Asset lookup
+
+Work-order lookup
+
+Document search
+
+Document reader
+
+Code execution infrastructure
+
+Coding agent
+
+Document generation
+
+Approval workflow
+
+Calculation Engine
+
 Dedicated calculation subsystem
+
 Structured calculation models
+
 Deterministic arithmetic
+
 Addition
+
 Subtraction
+
 Multiplication
+
 Division
+
 Ratio
+
 Absolute deviation
+
 Percentage deviation
+
 Percentage change
+
 Mean
+
 Median
+
 Statistics
-Trend calculations
-Moving average
+
+Trend analysis
+
+Moving averages
+
 Unit validation
+
 Unit conversion architecture
-Threshold/rule evaluation
+
+Threshold evaluation
+
+Engineering rules
+
 Verification
+
 Calculation IDs
+
 Trace IDs
+
 Calculation storage
+
 Provenance
+
 Agent integration
+
 Calculator tool integration
-Calculation API
-CSV/XLSX support
-P-102 end-to-end calculation workflow
-🟡 Being Expanded
 
+Calculation APIs
 
+CSV support
 
+XLSX support
 
-39. Team Contribution / Calculation Engine Contribution
-Calculation Engine Contribution
+Petroleum calculation architecture
 
-The major contribution of the Calculation Engine work is the introduction of a deterministic, verifiable and traceable engineering computation layer inside the agentic AI architecture.
+Equipment calculation architecture
 
-Key Contributions
-1. Deterministic Calculations
+Multi-parameter analysis architecture
 
-The system no longer relies solely on the LLM for numerical calculations.
+P-102 demonstration workflow
 
-2. Structured Calculation Requests
+🟡 Environment / Integration Dependent
 
-Natural-language calculation intents can be converted into structured operations.
+Full local LLM synthesis depends on the selected Ollama model being installed.
 
-3. Formula Registry
+Full RAG + LLM end-to-end operation depends on local model availability and configured knowledge-base data.
 
-Calculations are organized through a controlled registry.
+🔵 Future Expansion
 
-4. Unit Validation
+Additional petroleum-specific formulas
 
-Engineering values can be validated and normalized.
+Expanded engineering calculation registry
 
-5. Rules Engine
+More extensive automated tests
 
-Mathematical calculations are separated from engineering decision rules.
+Production-grade security hardening
 
-6. Statistical Analysis
+Additional spreadsheet formats
 
-The system supports deterministic statistical operations.
+Dedicated forecasting models
 
-7. Time-Series Analysis
+Expanded industrial datasets
 
-The system supports historical changes and moving averages.
+More advanced multimodal workflows
 
-8. Verification
+47. Security and Sovereignty
 
-Calculation outputs can be independently checked.
+Security and sovereignty are fundamental design goals.
 
-9. Traceability
+47.1 On-Premise Processing
 
-Each calculation can have:
+Sensitive information can remain inside the organization's controlled environment.
 
-Calculation ID
-Trace ID
-Formula
-Inputs
-Units
-Sources
-Rules
-Result
-Verification
-10. Petroleum Engineering Expansion
+47.2 Local LLM
 
-The architecture has been designed to support a broader petroleum/refinery calculation registry.
+LLM inference can be performed locally using Ollama.
 
-11. Agent Integration
+47.3 Confidential Knowledge Base
 
-The Calculation Engine is exposed through the agent tool layer.
+Industrial documents and vector data can remain in local infrastructure.
 
-12. P-102 Demonstration
+47.4 Controlled Tool Access
 
-The complete:
+Agents should only have access to approved tools.
 
-Retrieve
-→ Calculate
-→ Verify
-→ Explain
+47.5 Restricted File Access
 
-workflow has been demonstrated for P-102 pressure analysis.
+Agents should not have unrestricted access to the host machine.
 
-40. Demo Workflow
+47.6 Restricted Network Access
 
-A complete demo can be presented as follows.
+Agents should not have unrestricted outbound network access in confidential deployments.
 
-Demo 1 — Industrial Question
+47.7 Permission-Aware Access
 
-User asks:
+Access should consider:
 
-"What is the pressure of P-102?"
+User
+Role
+Project
+Dataset
+Document
+Classification
+Permission
 
-System:
+47.8 Auditability
 
-Chat
- ↓
-Agent
- ↓
-RAG
- ↓
-P-102 inspection data
- ↓
-Answer
-Demo 2 — Engineering Calculation
+Important operations and calculations should be traceable.
 
-User asks:
-
-"Is P-102 above its approved pressure limit?"
-
-System:
-
-Retrieve actual = 42 bar
-Retrieve limit = 40 bar
-          ↓
-Calculation Engine
-          ↓
-Deviation = +2 bar
-          ↓
-Percentage = +5%
-          ↓
-Rule Evaluation
-          ↓
-ENGINEERING_REVIEW
-          ↓
-Verification
-          ↓
-LLM Explanation
-Demo 3 — Historical Trend
-
-User asks:
-
-"Show the pressure trend for P-102."
-
-System:
-
-Historical Documents
-       ↓
-RAG
-       ↓
-Structured Time Series
-       ↓
-Trend Engine
-       ↓
-Period Changes
-       ↓
-Moving Average
-       ↓
-Visualization
-Demo 4 — Statistics
+48. Engineering Safety Principles
 
-User asks:
-
-"What is the average pressure for P-102?"
-
-System:
-
-Historical Dataset
-       ↓
-Statistics Engine
-       ↓
-Mean
-       ↓
-Verification
-       ↓
-Answer
-Demo 5 — Spreadsheet
-
-User uploads:
-
-production_data.xlsx
-
-User asks:
-
-"Calculate the average production and percentage change between two periods."
-
-System:
-
-XLSX
- ↓
-Parser
- ↓
-Structured Dataset
- ↓
-Calculation Engine
- ↓
-Statistics
- ↓
-Percentage Change
- ↓
-Trace
- ↓
-Verified Result
-41. Limitations
-
-The current implementation has several limitations.
-
-41.1 Petroleum Registry Expansion
-
-Not every petroleum-specific formula is currently implemented as a production-ready registry entry.
-
-The architecture supports expansion, but each new engineering calculation requires:
-
-Formula validation
-Unit definitions
-Input validation
-Test cases
-Engineering reference
-Versioning
-41.2 Plant-Specific Limits
-
-The system must not hard-code plant-specific safety limits unless they are explicitly authoritative and versioned.
-
-Limits should come from:
-
-SOP
-Manual
-Approved Engineering Rule
-Configuration
-Authoritative RAG Evidence
-41.3 Data Quality
-
-Calculation quality depends on input quality.
-
-Incorrect or outdated sensor/document data can produce incorrect engineering results even when the mathematical calculation is correct.
-
-41.4 LLM Limitations
-
-LLMs can still:
-
-Misunderstand ambiguous questions
-Select an inappropriate tool
-Misinterpret context
-Generate incorrect explanations
-
-This is why deterministic calculations and verification are essential.
-
-41.5 OCR Limitations
-
-OCR may produce errors when documents contain:
-
-Poor image quality
-Handwritten information
-Complex tables
-Engineering symbols
-Low-resolution scans
-
-OCR-derived values should be validated when used for important calculations.
-
-41.6 Forecasting
-
-Trend analysis does not automatically constitute forecasting.
-
-A dedicated forecasting model is required for predictive applications.
-
-41.7 Engineering Decision Making
-
-The system is an AI-assisted engineering workbench.
-
-It should not independently replace qualified engineers or approved industrial procedures.
-
-42. Engineering Safety Principles
-
-Safety is a core design requirement.
-
-42.1 Never Invent Safety Limits
-
-The AI must not generate a safety limit from its own knowledge.
+Never Invent Safety Limits
 
 Correct:
 
-RAG / Approved Source
-        ↓
-Safety / Operating Limit
-        ↓
+Approved Source
+      ↓
+Engineering Rule
+      ↓
 Calculation Engine
 
 Incorrect:
 
 LLM
  ↓
-Invented Limit
-42.2 Never Guess Missing Inputs
+Invented Safety Limit
+
+Never Guess Missing Inputs
 
 If a required input is missing:
 
@@ -2063,66 +2147,294 @@ STOP
  ↓
 Report Missing Input
 
-Do not assume:
+Do not assume zero or another arbitrary value.
 
-0
+Never Guess Units
 
-or any other arbitrary value.
+Unknown or incompatible units should be rejected or clarified.
 
-42.3 Never Guess Units
+Deterministic Results
 
-If units are unknown or incompatible:
+When an LLM-generated numerical answer conflicts with the Calculation Engine:
 
-Reject / Request Clarification
-42.4 Deterministic Results Are Authoritative
+Calculation Engine
+       ↓
+Verified Result
 
-When an LLM-generated numerical answer differs from the deterministic Calculation Engine:
-
-Calculation Engine Result
-=
-Authoritative Calculation Result
+should be treated as the authoritative numerical computation.
 
 The mismatch should be surfaced rather than hidden.
 
-42.5 Rules Must Be Versioned
+Version Engineering Rules
 
-Every engineering decision rule should have:
+Rules should contain:
 
 Rule ID
+
 Authority
+
 Version
-Effective Context
-42.6 Formulas Must Be Controlled
 
-Only approved formulas should be available to the Calculation Engine.
+Applicable context
 
-The system should not execute arbitrary LLM-generated formulas without validation.
+Control Formulas
 
-42.7 Evidence Must Be Traceable
+Only approved formulas should be available to the deterministic engine.
 
-Important engineering values should have a source reference wherever possible.
+Trace Evidence
 
-42.8 Forecasts Must Be Clearly Identified
+Important engineering values should retain source references whenever possible.
 
-A forecast must never be presented as an observed historical measurement.
+Forecasting
 
-42.9 Human Approval for Sensitive Actions
+Forecasts must be explicitly labeled and should not be presented as historical observations.
 
-AI recommendations should go through human review when required.
+Human Approval
 
-42.10 No Unsupported Safety Claims
+Sensitive engineering actions should remain subject to qualified human review.
 
-The AI should not make statements such as:
+No Unsupported Safety Claims
 
-"The equipment is definitely safe."
+The AI should not state that equipment is definitely safe unless such a conclusion is explicitly supported by an approved engineering workflow.
 
-unless such a conclusion is explicitly supported by an approved engineering workflow.
+49. Team Contribution — Calculation Engine
 
-Instead, the system should report measurable facts and applicable rules.
+The major contribution of the Calculation Engine work is the introduction of a:
 
-🔄 Final System Philosophy
+Deterministic, verifiable and traceable engineering computation layer inside the agentic AI architecture.
 
-The core philosophy of the project is:
+Key contributions:
+
+Deterministic calculations
+
+Structured calculation requests
+
+Formula registry
+
+Unit validation and normalization
+
+Engineering Rules Engine
+
+Statistical analysis
+
+Time-series analysis
+
+Verification
+
+Calculation traceability
+
+Petroleum/equipment calculation architecture
+
+Spreadsheet integration
+
+Agent integration
+
+Calculation APIs
+
+P-102 end-to-end demonstration
+
+50. Demo Workflow
+
+Demo 1 — Industrial Question
+
+User
+ ↓
+Chat
+ ↓
+Agent
+ ↓
+Knowledge Retrieval
+ ↓
+Industrial Evidence
+ ↓
+Answer
+
+Demo 2 — Engineering Calculation
+
+Question:
+
+Is P-102 above its approved pressure limit?
+
+Workflow:
+
+Actual = 42 bar
+Limit  = 40 bar
+       ↓
+Calculation Engine
+       ↓
+Deviation = +2 bar
+       ↓
+Percentage = +5%
+       ↓
+Rule Evaluation
+       ↓
+ENGINEERING_REVIEW
+       ↓
+Verification
+       ↓
+LLM Explanation
+
+Demo 3 — Historical Trend
+
+Historical Data
+      ↓
+Structured Time Series
+      ↓
+Trend Engine
+      ↓
+Period Changes
+      ↓
+Moving Average
+
+Demo 4 — Statistics
+
+Historical Dataset
+      ↓
+Statistics Engine
+      ↓
+Mean / Median / Statistics
+      ↓
+Verification
+      ↓
+Answer
+
+Demo 5 — Spreadsheet
+
+production_data.xlsx
+      ↓
+Spreadsheet Parser
+      ↓
+Structured Dataset
+      ↓
+Calculation Engine
+      ↓
+Statistics / Percentage Change
+      ↓
+Trace
+      ↓
+Verified Result
+
+51. Limitations
+
+51.1 Petroleum Formula Coverage
+
+Not every petroleum-specific calculation is currently implemented as a production-ready registry entry.
+
+Each additional formula requires:
+
+Formula
+ ↓
+Engineering Validation
+ ↓
+Units
+ ↓
+Input Validation
+ ↓
+Test Cases
+ ↓
+Authority
+ ↓
+Version
+
+51.2 Plant-Specific Limits
+
+Plant-specific limits must come from authoritative sources.
+
+The system should not arbitrarily hard-code safety limits.
+
+51.3 Data Quality
+
+Correct mathematics cannot compensate for incorrect input data.
+
+51.4 LLM Limitations
+
+LLMs can still:
+
+Misunderstand ambiguous questions
+
+Select an inappropriate tool
+
+Misinterpret context
+
+Generate incorrect explanations
+
+51.5 OCR Limitations
+
+OCR may make mistakes with:
+
+Poor image quality
+
+Handwriting
+
+Complex tables
+
+Engineering symbols
+
+Low-resolution scans
+
+51.6 Forecasting
+
+Trend analysis is not forecasting.
+
+A dedicated forecasting model is required.
+
+51.7 Engineering Responsibility
+
+The platform is an AI-assisted engineering workbench.
+
+It does not replace:
+
+Qualified engineers
+
+Approved SOPs
+
+Safety procedures
+
+Engineering authority
+
+52. Key Innovation
+
+The key innovation is not simply adding an LLM to an industrial application.
+
+The platform creates a controlled ecosystem:
+
+Open-Weight LLM
+        +
+Agentic Planning
+        +
+RAG
+        +
+Industrial Documents
+        +
+Deterministic Calculation Engine
+        +
+Engineering Rules
+        +
+Verification
+        +
+Traceability
+        +
+Human Approval
+        =
+Sovereign Industrial AI Workbench
+
+This architecture combines:
+
+AI flexibility
+
+Engineering determinism
+
+Evidence grounding
+
+Verification
+
+Auditability
+
+Data sovereignty
+
+Human oversight
+
+53. Final System Philosophy
 
              ┌─────────────────────┐
              │      UNDERSTAND     │
@@ -2152,103 +2464,378 @@ The core philosophy of the project is:
              │       DELIVER       │
              └─────────────────────┘
 
-The system combines the flexibility of AI with the reliability of deterministic engineering software.
+The fundamental principle is:
 
-🏆 Key Innovation
+AI should provide intelligence and flexibility, while deterministic software provides numerical reliability and engineering control.
 
-The key innovation is not simply adding an LLM to an industrial application.
+54. Installation
 
-The platform creates a controlled ecosystem where:
+54.1 Prerequisites
 
-Open-Weight LLM
-        +
-Agentic Planning
-        +
-RAG
-        +
-Industrial Documents
-        +
-Deterministic Calculation Engine
-        +
-Engineering Rules
-        +
-Verification
-        +
-Traceability
-        +
-Human Approval
-        =
-Sovereign Industrial AI Workbench
+Install:
 
-This approach is particularly important for confidential industrial environments where AI systems must be:
+Python 3.12+
 
-Reliable
-Explainable
-Auditable
-Secure
-Deterministic where required
-Grounded in authoritative information
-Deployable on-premise
-📌 Summary
+Node.js
 
-The Sovereign On-Premise Agentic AI Workbench provides an integrated platform for confidential industrial AI.
+npm
 
-The existing project provides the foundation for:
+Git
 
-Agentic AI
-Local LLMs
-RAG
-Qdrant
-OCR
-Document intelligence
-Data analysis
-Code execution
-Asset lookup
-Work-order lookup
-Document generation
-Approval workflows
-Industrial knowledge management
+Ollama
 
-The newly enhanced Calculation Engine adds:
+Check installations:
 
-Deterministic engineering calculations
-Structured calculation requests
-Formula registry
-Unit validation
-Unit conversion
-Percentage deviation
-Absolute deviation
-Percentage change
-Statistics
-Trends
-Moving averages
-Threshold rules
-Verification
-Provenance
-Calculation traces
-Calculation IDs
-Structured APIs
-Spreadsheet support
-Agent integration
-P-102 end-to-end engineering workflow
-#  Installation
-
-## Prerequisites
-
-Before running the project, make sure the following software is installed:
-
-- Python 3.12+
-- Node.js
-- npm
-- Git
-- Ollama
-
-Check the installations using:
-
-```bash
 python --version
 node --version
 npm --version
 git --version
 ollama --version
 
+55. Clone Repository
+
+git clone https://github.com/riddhimankar-dev/Sovereign_On_Premise_Agentic_AI_Workbench.git
+
+Enter the project:
+
+cd Sovereign_On_Premise_Agentic_AI_Workbench
+
+56. Backend Setup
+
+cd backend
+
+Windows:
+
+.venv\Scripts\activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+57. Frontend Setup
+
+Open another terminal:
+
+cd "Replicate Existing Design"
+
+Install dependencies:
+
+npm install
+
+58. Running the Backend
+
+cd "C:\Users\riddh\OneDrive\Desktop\sih_117\Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench\backend"
+
+.venv\Scripts\activate
+
+python -m uvicorn app.main:app --reload
+
+Backend:
+
+http://127.0.0.1:8000
+
+Swagger:
+
+http://127.0.0.1:8000/docs
+
+59. Running the Frontend
+
+Open another terminal:
+
+cd "C:\Users\riddh\OneDrive\Desktop\sih_117\Smart_India_Hackathon_Sovereign_On_Premise_Agentic_AI_Workbench\Replicate Existing Design"
+
+npm run dev -- --port 5173
+
+Open:
+
+http://localhost:5173/
+
+60. Ollama Setup
+
+Check installed models:
+
+ollama list
+
+If the selected model is not installed:
+
+ollama pull qwen2.5:3b
+
+Test:
+
+ollama run qwen2.5:3b
+
+The full local-LLM workflow requires the selected model to be available locally.
+
+61. Calculation Engine Testing
+
+The Calculation Engine can be tested independently from the LLM.
+
+Recommended tests:
+
+Arithmetic
+
+Addition
+
+Subtraction
+
+Multiplication
+
+Division
+
+Ratio
+
+Deviation
+
+Absolute deviation
+
+Percentage deviation
+
+Percentage change
+
+Units
+
+Valid conversions
+
+Compatible units
+
+Incompatible units
+
+Invalid units
+
+Statistics
+
+Mean
+
+Median
+
+Minimum
+
+Maximum
+
+Range
+
+Variance
+
+Standard deviation
+
+Percentiles
+
+Trends
+
+Period change
+
+Percentage change
+
+Moving average
+
+Rules
+
+Below limit
+
+At limit
+
+Above limit
+
+Errors
+
+Missing input
+
+Invalid numeric input
+
+Division by zero
+
+Invalid unit
+
+Unknown operation
+
+Invalid dataset
+
+62. Example Calculation API Request
+
+Example percentage-deviation request:
+
+{
+  "operation": "percentage_deviation",
+  "inputs": {
+    "actual": {
+      "value": 42,
+      "unit": "bar"
+    },
+    "reference": {
+      "value": 40,
+      "unit": "bar"
+    }
+  }
+}
+
+Expected mathematical result:
+
+5%
+
+A rule evaluation can additionally classify the result as:
+
+ENGINEERING_REVIEW
+
+when the configured rule specifies that actual pressure above the reference limit requires review.
+
+63. Example API Response
+
+A structured calculation response can contain:
+
+{
+  "calculation_id": "CAL-EXAMPLE",
+  "operation": "percentage_deviation",
+  "result": 5,
+  "unit": "%",
+  "formula": "((actual - reference) / reference) × 100",
+  "status": "ENGINEERING_REVIEW",
+  "verification_status": "VERIFIED",
+  "trace_id": "TRACE-EXAMPLE"
+}
+
+Exact IDs are generated by the system for each calculation.
+
+64. Why the Calculation Engine Matters
+
+Industrial AI cannot safely depend only on language-model reasoning for numerical engineering work.
+
+For example, an LLM may explain:
+
+42 bar is above 40 bar.
+
+But the Calculation Engine provides a deterministic computation:
+
+42 - 40 = +2 bar
+
+and:
+
+((42 - 40) / 40) × 100 = 5%
+
+It can then verify and trace the result.
+
+This creates a separation between:
+
+Language Intelligence
+        ↓
+Engineering Computation
+        ↓
+Verification
+
+65. Summary
+
+The Sovereign On-Premise Agentic AI Workbench provides a unified platform for confidential industrial AI workflows.
+
+The existing project foundation includes:
+
+Agentic AI
+
+Local LLM infrastructure
+
+Ollama
+
+RAG
+
+Qdrant
+
+OCR infrastructure
+
+Document intelligence
+
+Data analysis
+
+Code execution
+
+Asset lookup
+
+Work-order lookup
+
+Document generation
+
+Approval workflows
+
+The enhanced Calculation Engine adds:
+
+Deterministic engineering calculations
+
+Structured calculation requests
+
+Formula registry
+
+Unit validation
+
+Unit normalization
+
+Unit conversion
+
+Absolute deviation
+
+Percentage deviation
+
+Percentage change
+
+Statistics
+
+Trends
+
+Moving averages
+
+Threshold rules
+
+Verification
+
+Provenance
+
+Calculation traces
+
+Calculation IDs
+
+Trace IDs
+
+Structured APIs
+
+Spreadsheet support
+
+CSV/XLSX processing
+
+Agent integration
+
+Petroleum/equipment calculation architecture
+
+Multi-parameter analysis
+
+P-102 end-to-end demonstration
+
+The resulting architecture provides a foundation for a sovereign industrial AI system where:
+
+LLM
+=
+Understand + Plan + Explain
+
+RAG
+=
+Retrieve Evidence
+
+Calculation Engine
+=
+Deterministic Computation
+
+Rules Engine
+=
+Engineering Decision Logic
+
+Verification
+=
+Independent Checking
+
+Trace
+=
+Provenance + Auditability
+
+Human
+=
+Final Engineering Responsibility
+
+
+License
+
+This project is developed as part of the Smart India Hackathon 2026 project and is intended for demonstration and research purposes.
