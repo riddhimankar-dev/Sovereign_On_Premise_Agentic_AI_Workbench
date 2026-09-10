@@ -1,6 +1,29 @@
-import { MessageSquare, FolderOpen, Files, BookOpen, CheckSquare, Package, ClipboardCheck, Cpu, ShieldCheck, Zap, ChevronRight } from "lucide-react";
+import {
+  MessageSquare,
+  FolderOpen,
+  Files,
+  BookOpen,
+  CheckSquare,
+  Package,
+  ClipboardCheck,
+  Cpu,
+  ShieldCheck,
+  Zap,
+  ChevronRight,
+  Calculator
+} from "lucide-react";
 
-type View = "chat"|"projects"|"files"|"knowledge"|"tasks"|"artifacts"|"approvals"|"models"|"security";
+type View =
+  | "chat"
+  | "projects"
+  | "files"
+  | "knowledge"
+  | "tasks"
+  | "artifacts"
+  | "approvals"
+  | "cost-intelligence"
+  | "models"
+  | "security";
 
 interface SidebarProps {
   currentView: View;
@@ -19,13 +42,14 @@ const NAV: { label: string; items: { id: View; name: string; Icon: React.Element
     ],
   },
   {
-    label: "WORK",
-    items: [
-      { id: "tasks",     name: "Tasks",     Icon: CheckSquare, badge: 2 },
-      { id: "artifacts", name: "Artifacts", Icon: Package },
-      { id: "approvals", name: "Approvals", Icon: ClipboardCheck, badge: 1 },
-    ],
-  },
+  label: "WORK",
+  items: [
+    { id: "tasks",             name: "Tasks",             Icon: CheckSquare, badge: 2 },
+    { id: "artifacts",         name: "Artifacts",         Icon: Package },
+    { id: "approvals",         name: "Approvals",         Icon: ClipboardCheck, badge: 1 },
+    { id: "cost-intelligence", name: "Cost Intelligence", Icon: Calculator },
+  ],
+},
   {
     label: "SYSTEM",
     items: [

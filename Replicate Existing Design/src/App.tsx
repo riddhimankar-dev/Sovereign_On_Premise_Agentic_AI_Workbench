@@ -1,4 +1,5 @@
-import { useState, useEffect, Component, ReactNode } from "react";
+import { useState, useEffect, Component } from "react";
+import type { ReactNode } from "react";
 import { PanelRight } from "lucide-react";
 
 import Sidebar from "./components/Sidebar";
@@ -21,7 +22,9 @@ import FilesScreen from "./screens/FilesScreen";
 import DocumentViewerScreen from "./screens/DocumentViewerScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import ErrorStateScreen from "./screens/ErrorStateScreen";
-import { Document, Project } from "./services/api";
+import CostIntelligenceScreen from "./screens/CostIntelligenceScreen";
+
+import type { Document, Project } from "./services/api";
 
 type View =
   | "chat"
@@ -33,17 +36,39 @@ type View =
   | "tasks"
   | "artifacts"
   | "approvals"
+  | "cost-intelligence"
   | "models"
   | "security"
   | "profile"
   | "error-state";
 
-const sidebarViews = new Set<View>(["chat", "projects", "files", "knowledge", "tasks", "artifacts", "approvals", "models", "security"]);
+const sidebarViews = new Set<View>([
+  "chat",
+  "projects",
+  "files",
+  "knowledge",
+  "tasks",
+  "artifacts",
+  "approvals",
+  "cost-intelligence",
+  "models",
+  "security",
+]);
 
-type SidebarView = "chat" | "projects" | "files" | "knowledge" | "tasks" | "artifacts" | "approvals" | "models" | "security";
+type SidebarView =
+  | "chat"
+  | "projects"
+  | "files"
+  | "knowledge"
+  | "tasks"
+  | "artifacts"
+  | "approvals"
+  | "cost-intelligence"
+  | "models"
+  | "security";
 
 function isSidebarView(v: View): v is SidebarView {
-  return sidebarViews.has(v as SidebarView);
+  return sidebarViews.has(v);
 }
 
 function hasSession(): boolean {
@@ -54,30 +79,44 @@ function hasSession(): boolean {
   }
 }
 
-class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; message: string }> {
-  state: { hasError: boolean; message: string } = { hasError: false, message: "" };
+class AppErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; message: string }
+> {
+  state: { hasError: boolean; message: string } = {
+    hasError: false,
+    message: "",
+  };
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, message: error?.message || "Unknown error" };
+    return {
+      hasError: true,
+      message: error?.message || "Unknown error",
+    };
   }
 
   componentDidCatch(error: Error) {
     console.error("App render error:", error);
   }
 
-  handleReload() {
+  handleReload = () => {
     window.location.reload();
-  }
+  };
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="h-full flex items-center justify-center bg-[#080D18] text-[#F5F7FA]">
           <div className="max-w-md w-full px-6 text-center">
-            <h1 className="text-[22px] font-semibold mb-2">Something went wrong</h1>
+            <h1 className="text-[22px] font-semibold mb-2">
+              Something went wrong
+            </h1>
+
             <p className="text-[12.5px] text-[#9AA6B5] mb-4 leading-relaxed break-words">
-              {this.state.message || "The interface hit an unexpected error."}
+              {this.state.message ||
+                "The interface hit an unexpected error."}
             </p>
+
             <button
               onClick={this.handleReload}
               className="h-10 px-5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-[13px] font-semibold transition-colors"
@@ -88,18 +127,29 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
         </div>
       );
     }
+
     return this.props.children;
   }
 }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState<boolean>(() => hasSession());
+  const [loggedIn, setLoggedIn] = useState<boolean>(() =>
+    hasSession()
+  );
+
   const [view, setView] = useState<View>("chat");
+
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
   const [modelDrawerOpen, setModelDrawerOpen] = useState(false);
+
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  const [selectedDoc, setSelectedDoc] =
+    useState<Document | null>(null);
+
+  const [selectedProject, setSelectedProject] =
+    useState<Project | null>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -107,54 +157,122 @@ export default function App() {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
       }
+
       if (e.key === "Escape") {
         setCommandPaletteOpen(false);
         setModelDrawerOpen(false);
       }
     }
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    return () =>
+      window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   if (!loggedIn) {
-    return <LoginScreen onLogin={() => setLoggedIn(true)} />;
+    return (
+      <LoginScreen
+        onLogin={() => setLoggedIn(true)}
+      />
+    );
   }
 
-  const showRightPanel = view === "chat" && rightPanelOpen;
-  const sidebarActive: SidebarView = isSidebarView(view)
-    ? view
-    : view === "project-detail" ? "projects"
-    : view === "document-viewer" ? "files"
-    : "chat";
+  const showRightPanel =
+    view === "chat" && rightPanelOpen;
+
+  const sidebarActive: SidebarView =
+    isSidebarView(view)
+      ? view
+      : view === "project-detail"
+        ? "projects"
+        : view === "document-viewer"
+          ? "files"
+          : "chat";
 
   function renderScreen() {
     switch (view) {
       case "chat":
-        return <ChatScreen onOpenModelDrawer={() => setModelDrawerOpen(true)} />;
+        return (
+          <ChatScreen
+            onOpenModelDrawer={() =>
+              setModelDrawerOpen(true)
+            }
+          />
+        );
+
       case "projects":
-        return <ProjectsScreen onSelectProject={(p) => { setSelectedProject(p); setView("project-detail"); }} />;
+        return (
+          <ProjectsScreen
+            onSelectProject={(project) => {
+              setSelectedProject(project);
+              setView("project-detail");
+            }}
+          />
+        );
+
       case "project-detail":
-        return <ProjectDetailScreen project={selectedProject} onBack={() => setView("projects")} />;
+        return (
+          <ProjectDetailScreen
+            project={selectedProject}
+            onBack={() => setView("projects")}
+          />
+        );
+
       case "files":
-        return <FilesScreen onSelectFile={(doc) => { setSelectedDoc(doc); setView("document-viewer"); }} />;
+        return (
+          <FilesScreen
+            onSelectFile={(document) => {
+              setSelectedDoc(document);
+              setView("document-viewer");
+            }}
+          />
+        );
+
       case "document-viewer":
-        return <DocumentViewerScreen document={selectedDoc} onBack={() => setView("files")} onAskAI={() => setView("chat")} />;
+        return (
+          <DocumentViewerScreen
+            document={selectedDoc}
+            onBack={() => setView("files")}
+            onAskAI={() => setView("chat")}
+          />
+        );
+
       case "knowledge":
         return <KnowledgeScreen />;
+
       case "tasks":
         return <TasksScreen />;
+
       case "artifacts":
         return <ArtifactsScreen />;
+
       case "approvals":
         return <ApprovalsScreen />;
+
+      case "cost-intelligence":
+        return <CostIntelligenceScreen />;
+
       case "models":
         return <ModelsScreen />;
+
       case "security":
         return <SecurityScreen />;
+
       case "profile":
-        return <ProfileScreen onBack={() => setView("chat")}/>;
+        return (
+          <ProfileScreen
+            onBack={() => setView("chat")}
+          />
+        );
+
       case "error-state":
-        return <ErrorStateScreen onBack={() => setView("chat")}/>;
+        return (
+          <ErrorStateScreen
+            onBack={() => setView("chat")}
+          />
+        );
+
       default:
         return null;
     }
@@ -162,17 +280,34 @@ export default function App() {
 
   return (
     <AppErrorBoundary>
-      <div className="h-full flex overflow-hidden bg-[#080D18] text-[#F5F7FA]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        <Sidebar currentView={sidebarActive} onNavigate={(v) => setView(v)} onProfile={() => setView("profile")}/>
+      <div
+        className="h-full flex overflow-hidden bg-[#080D18] text-[#F5F7FA]"
+        style={{
+          fontFamily: "'Inter', system-ui, sans-serif",
+        }}
+      >
+        <Sidebar
+          currentView={sidebarActive}
+          onNavigate={(nextView) =>
+            setView(nextView as View)
+          }
+          onProfile={() => setView("profile")}
+        />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Top bar row */}
+
+          {/* Top bar */}
           <div className="flex-none flex items-stretch border-b border-[#253248]">
+
             <div className="flex-1 min-w-0">
               <TopBar
-                view={sidebarActive}
-                onCommandPalette={() => setCommandPaletteOpen(true)}
-                onSecurityClick={() => setView("security")}
+                   view={sidebarActive}
+                onCommandPalette={() =>
+                  setCommandPaletteOpen(true)
+                }
+                onSecurityClick={() =>
+                  setView("security")
+                }
               />
             </div>
 
@@ -180,8 +315,16 @@ export default function App() {
             {view === "chat" && (
               <div className="flex-none flex items-center px-2 bg-[#0F1726]">
                 <button
-                  onClick={() => setRightPanelOpen(!rightPanelOpen)}
-                  title={rightPanelOpen ? "Hide context panel" : "Show context panel"}
+                  onClick={() =>
+                    setRightPanelOpen(
+                      !rightPanelOpen
+                    )
+                  }
+                  title={
+                    rightPanelOpen
+                      ? "Hide context panel"
+                      : "Show context panel"
+                  }
                   className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
                     rightPanelOpen
                       ? "bg-[#8B5CF6]/15 text-[#8B5CF6]"
@@ -192,25 +335,49 @@ export default function App() {
                 </button>
               </div>
             )}
+
           </div>
 
-          {/* Content */}
+          {/* Main content */}
           <div className="flex-1 flex min-h-0 overflow-hidden">
+
             <main className="flex-1 min-w-0 overflow-hidden">
               {renderScreen()}
             </main>
-            {showRightPanel && <RightPanel onClose={() => setRightPanelOpen(false)} />}
+
+            {showRightPanel && (
+              <RightPanel
+                onClose={() =>
+                  setRightPanelOpen(false)
+                }
+              />
+            )}
+
           </div>
         </div>
 
-        {/* Global overlays */}
-        {modelDrawerOpen && <ModelDrawer onClose={() => setModelDrawerOpen(false)} />}
-        {commandPaletteOpen && (
-          <CommandPalette
-            onClose={() => setCommandPaletteOpen(false)}
-            onNavigate={(v) => { setView(v); setCommandPaletteOpen(false); }}
+        {/* Model drawer */}
+        {modelDrawerOpen && (
+          <ModelDrawer
+            onClose={() =>
+              setModelDrawerOpen(false)
+            }
           />
         )}
+
+        {/* Command palette */}
+        {commandPaletteOpen && (
+          <CommandPalette
+            onClose={() =>
+              setCommandPaletteOpen(false)
+            }
+            onNavigate={(nextView) => {
+              setView(nextView as View);
+              setCommandPaletteOpen(false);
+            }}
+          />
+        )}
+
       </div>
     </AppErrorBoundary>
   );
